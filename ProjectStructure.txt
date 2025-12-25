@@ -1,0 +1,71 @@
+.
+├── pom.xml
+├── ProjectStructure.txt
+└── src
+    ├── main
+    │   ├── java
+    │   │   └── com
+    │   │       └── kieru
+    │   │           └── backend
+    │   │               ├── config
+    │   │               │   ├── AsyncConfig.java
+    │   │               │   ├── FirebaseConfig.java
+    │   │               │   └── SecurityConfig.java
+    │   │               ├── controller
+    │   │               │   ├── AuthController.java
+    │   │               │   ├── DashboardController.java
+    │   │               │   ├── SecretController.java
+    │   │               │   └── TestController.java
+    │   │               ├── dto
+    │   │               │   ├── AuthResponse.java
+    │   │               │   ├── CreateAccessLog.java
+    │   │               │   ├── CreateSecretRequest.java
+    │   │               │   ├── ErrorResponse.java
+    │   │               │   ├── LoginRequest.java
+    │   │               │   ├── SecretLogsResponseDTO.java
+    │   │               │   ├── SecretMetadataResponseDTO.java
+    │   │               │   └── SecretResponseDTO.java
+    │   │               ├── entity
+    │   │               │   ├── DailyStatistic.java
+    │   │               │   ├── SecretAccessLog.java
+    │   │               │   ├── SecretMetadata.java
+    │   │               │   ├── SecretPayload.java
+    │   │               │   └── User.java
+    │   │               ├── exception
+    │   │               │   └── GlobalExceptionHandler.java
+    │   │               ├── filter
+    │   │               │   ├── FirebaseAuthFilter.java
+    │   │               │   └── RateLimitFilter.java
+    │   │               ├── KieruBackendApplication.java
+    │   │               ├── repository
+    │   │               │   ├── AccessLogRepository.java
+    │   │               │   ├── DailyStatisticRepository.java
+    │   │               │   ├── SecretMetadataRepository.java
+    │   │               │   ├── SecretPayloadRepository.java
+    │   │               │   └── UserRepository.java
+    │   │               ├── service
+    │   │               │   ├── AccessLogService.java
+    │   │               │   ├── AuthService.java
+    │   │               │   ├── impl
+    │   │               │   │   ├── AuthServiceImpl.java
+    │   │               │   │   └── SecretServiceImpl.java
+    │   │               │   └── SecretService.java
+    │   │               └── util
+    │   │                   ├── KieruUtil.java
+    │   │                   ├── RedisKeyUtil.java
+    │   │                   ├── SecurityUtil.java
+    │   │                   └── SubscriptionRateLimitConfig.java
+    │   └── resources
+    │       ├── application.properties
+    │       ├── service-account.json
+    │       ├── static
+    │       └── templates
+    ├── ProjectStructure.txt
+    └── test
+        └── java
+            └── com
+                └── kieru
+                    └── kieru_backend
+                        └── KieruBackendApplicationTests.java
+
+    25 directories, 44 files
