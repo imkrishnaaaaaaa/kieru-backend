@@ -1,0 +1,90 @@
+package com.kieru.backend.entity;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Entity
+@Table(
+        name = "secret_metadata",
+        indexes = {
+                @Index(name = "idx_secret_metadata_owner", columnList = "owner_id"),
+                @Index(name = "idx_secret_metadata_expires", columnList = "expires_at")
+        }
+)
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SecretMetadata {
+
+    @Id
+    @Column(length = 50)
+    private String id;
+
+    // null => anonymous
+    @Column(name = "owner_id", length = 50)
+    private String ownerId;
+
+    @Column(length = 50)
+    private String secretName;
+
+    @Min(0)
+    @Column(name = "max_views", nullable = false)
+    private int maxViews = 1;
+
+    @Min(0)
+    @Column(name = "views_left", nullable = false)
+    private int viewsLeft = 1;
+
+    @Column(name = "view_time_seconds", nullable = false)
+    private int viewTimeSeconds = 60;
+
+    @Column(name = "show_time_bomb", nullable = false)
+    private boolean showTimeBomb = false;
+
+    /**
+     * Use epoch millis (Instant) — Instant is easier to manage than manual long math.
+     * Keeping it non-nullable ensures you always have an expiry.
+     */
+    @NotNull
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
+    /**
+     * One-to-many logs. mappedBy points to the field 'secret' in SecretAccessLog.
+     * Cascade.REMOVE ensures logs are removed if metadata is removed.
+     * orphanRemoval could be used if you remove entries from the collection on the parent and want them deleted.
+     */
+    @OneToMany(mappedBy = "secret", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<SecretAccessLog> accessLogs = new ArrayList<>();
+
+    // When metadata is created
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID().toString();
+        }
+        if (this.createdAt == null) {
+            this.createdAt = Instant.now();
+        }
+        if (this.expiresAt == null) {
+            this.expiresAt = Instant.now().plusSeconds(24 * 3600);
+        }
+    }
+}

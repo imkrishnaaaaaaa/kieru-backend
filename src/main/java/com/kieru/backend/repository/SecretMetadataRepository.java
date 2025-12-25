@@ -1,0 +1,36 @@
+package com.kieru.backend.repository;
+
+import com.kieru.backend.entity.SecretMetadata;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Repository
+public interface SecretMetadataRepository extends JpaRepository<SecretMetadata, String> {
+
+    List<SecretMetadata> findByOwnerIdAndIsActive(String ownerId, boolean isActive, Pageable pageable);
+
+    void deleteById(String id);
+
+    int getViewsLeftById(String id);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE SecretMetadata s SET s.viewsLeft = s.viewsLeft - 1 WHERE s.id = :id AND s.viewsLeft > 0")
+    void decrementViewsLeft(@Param("id") String id);
+
+    /**
+     * Strictly disables the secret.
+     * Used when Redis hits 0.
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE SecretMetadata s SET s.isActive = false WHERE s.id = :id")
+    void disableSecret(@Param("id") String id);
+}
