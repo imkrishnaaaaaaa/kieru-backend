@@ -1,10 +1,34 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# =========================
+# 🔐 Security / Secrets (CRITICAL)
+# =========================
+src/main/resources/service-account.json
+src/main/resources/firebase-service-account.json
+*.p12
+*.key
+.env
 
-### STS ###
+# =========================
+# 🧱 Build / Maven
+# =========================
+target/
+*.class
+HELP.md
+
+# Keep Maven Wrapper
+!.mvn/wrapper/maven-wrapper.jar
+
+# =========================
+# 🧠 IntelliJ IDEA
+# =========================
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# =========================
+# 🌱 Eclipse / STS
+# =========================
 .apt_generated
 .classpath
 .factorypath
@@ -13,21 +37,29 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
+# =========================
+# 📦 NetBeans
+# =========================
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
+# =========================
+# 🧑‍💻 VS Code
+# =========================
 .vscode/
+
+# =========================
+# 💻 OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# 📜 Logs
+# =========================
+logs/
+*.log
