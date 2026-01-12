@@ -45,6 +45,35 @@ public class KieruUtil {
         }
     }
 
+    public enum LoginProvider {
+
+        GOOGLE("google.com"),
+        EMAIL("password"),
+        GUEST("anonymous"),
+        GITHUB("github.com"),
+        FACEBOOK("facebook.com"),
+        TWITTER("twitter.com"),
+        APPLE("apple.com"),
+        MICROSOFT("microsoft.com"),
+        UNKNOWN("unknown");
+
+        private final String firebaseId;
+
+        LoginProvider(String firebaseId) {
+            this.firebaseId = firebaseId;
+        }
+
+        public static LoginProvider fromFirebaseProvider(String firebaseId) {
+            for (LoginProvider provider : values()) {
+                if (provider.firebaseId.equalsIgnoreCase(firebaseId)) {
+                    return provider;
+                }
+            }
+            return UNKNOWN;
+        }
+    }
+
+
     public int getDailyCreateLimit(SubscriptionPlan plan) {
         if (plan == null) return config.getAnonymous().getCreateLimitDaily();
 

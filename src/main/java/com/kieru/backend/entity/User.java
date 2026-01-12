@@ -57,6 +57,12 @@ public class User {
     @Column(length = 20, nullable = false)
     private KieruUtil.SubscriptionPlan subscription;
 
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private KieruUtil.LoginProvider loginProvider;
+
+
     @Column(length = 50)
     private String sessionVersion;
 

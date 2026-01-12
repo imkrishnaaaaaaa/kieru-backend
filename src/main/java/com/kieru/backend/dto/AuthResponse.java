@@ -10,6 +10,8 @@ public class AuthResponse {
     private String email;
     private String displayName;
     private String role;           // "USER", "ADMIN"
+    private String subscription;
+    private String loginProvider;
 
     // CRITICAL for Single Session:
     // The frontend must save this and send it in the header 'X-Session-Version'

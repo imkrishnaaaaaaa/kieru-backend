@@ -5,6 +5,7 @@ import com.kieru.backend.dto.LoginRequest;
 import com.kieru.backend.entity.User;
 
 import com.kieru.backend.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,8 +25,10 @@ public class AuthController {
      * Returns Session Version.
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        String ip = httpRequest.getRemoteAddr();
+        AuthResponse response = authService.login(request, ip);
+
         return ResponseEntity.ok(response);
     }
 

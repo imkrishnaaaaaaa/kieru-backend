@@ -8,7 +8,7 @@ public interface AuthService {
      * Verifies Firebase token, syncs user to DB, rotates session version.
      * @return User details + New Session Version
      */
-    AuthResponse login(LoginRequest request);
+    AuthResponse login(LoginRequest request, String ip);
 
     /**
      * Invalidates the session version in DB, effectively logging out ALL devices.
