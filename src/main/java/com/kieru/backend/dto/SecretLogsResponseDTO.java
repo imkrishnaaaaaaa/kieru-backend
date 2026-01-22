@@ -16,8 +16,8 @@ public class SecretLogsResponseDTO {
     // Nested List of Log Entries
     private List<LogEntry> logs;
 
-    private int totalCount;
-    private boolean isSuccess;
+    private Integer totalCount;
+    private Boolean isSuccess;
 
     private String failureReason;
 
@@ -33,7 +33,7 @@ public class SecretLogsResponseDTO {
         private String deviceType;     // "Mobile", "Desktop"
         private String userAgent;      // Raw browser string
         private Instant accessedAt;
-        private boolean wasSuccessful; // True = Viewed, False = Wrong Password
+        private Boolean wasSuccessful; // True = Viewed, False = Wrong Password
     }
 
 }

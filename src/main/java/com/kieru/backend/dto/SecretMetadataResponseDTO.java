@@ -15,17 +15,17 @@ public class SecretMetadataResponseDTO {
     private String secretName;        // e.g., "Wifi Password" (User defined)
 
     // 2. Status Flags
-    private boolean isActive;         // Derived from (Now < Expire AND Views < Limit)
-    private boolean isSuccess;
-    private boolean showTimeBomb;     // <--- ADDED: Syncs with dashboard UI
-    private int viewTimeInSeconds;         // How many people have seen it so far
+    private Boolean isActive;         // Derived from (Now < Expire AND Views < Limit)
+    private Boolean isSuccess;
+    private Boolean showTimeBomb;     // <--- ADDED: Syncs with dashboard UI
+    private Integer viewTimeInSeconds;         // How many people have seen it so far
 
     // 3. Stats
-    private int maxViews;
-    private int currentViews;         // How many people have seen it so far
+    private Integer maxViews;
+    private Integer currentViews;         // How many people have seen it so far
 
     // 4. Timestamps
-    private boolean isDeleted;
+    private Boolean isDeleted;
     private Instant expiresAt;           // Epoch Millis
     private Instant createdAt;  // For sorting the list
 

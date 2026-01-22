@@ -13,17 +13,17 @@ public class SecretResponseDTO {
     private String content;
     private String type;
 
-    private int viewTimeSeconds;
-    private boolean showTimeBomb;
+    private Integer viewTimeSeconds;
+    private Boolean showTimeBomb;
 
     private Instant expiresAt;
-    private int viewsLeft;
+    private Integer viewsLeft;
 
-    private boolean isExpired;
-    private boolean isDeleted;
-    private boolean isActive;
-    private boolean isSuccess;
-    private boolean isValidationPassed;
+    private Boolean isExpired;
+    private Boolean isDeleted;
+    private Boolean isActive;
+    private Boolean isSuccess;
+    private Boolean isValidationPassed;
     private String message;
 
     private HttpStatus httpStatus;

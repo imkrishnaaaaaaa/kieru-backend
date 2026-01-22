@@ -20,7 +20,7 @@ public class CreateAccessLog {
 
     private String userAgent;
 
-    private boolean wasSuccessful;
+    private Boolean wasSuccessful;
 
     private String failureReason;
 }
