@@ -9,6 +9,7 @@ public class AuthResponse {
     private String userId;
     private String email;
     private String displayName;
+    private String photoUrl;
     private String role;           // "USER", "ADMIN"
     private String subscription;
     private String loginProvider;
