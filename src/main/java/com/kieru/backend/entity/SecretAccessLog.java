@@ -39,7 +39,7 @@ public class SecretAccessLog {
     private String userAgent;
 
     @Column(name = "was_successful", nullable = false)
-    private boolean wasSuccessful = false;
+    private Boolean wasSuccessful = false;
 
     @Column(name = "failure_reason", length = 100)
     private String failureReason;

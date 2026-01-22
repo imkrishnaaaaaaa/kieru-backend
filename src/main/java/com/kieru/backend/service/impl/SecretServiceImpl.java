@@ -56,8 +56,8 @@ public class SecretServiceImpl implements SecretService {
             if (cachedPlan != null) {
                 userPlan = cachedPlan;
             } else {
-                userPlan = userRepo.getSubscriptionById(ownerId);
-                if (userPlan == null) userPlan = KieruUtil.SubscriptionPlan.EXPLORER.getName();
+                KieruUtil.SubscriptionPlan planEnum = userRepo.findSubscriptionPlanById(ownerId);
+                userPlan = planEnum == null ? KieruUtil.SubscriptionPlan.EXPLORER.getName() : planEnum.getName();
                 redisTemplate.opsForValue().set(redisOwnerSubscriptionKey, userPlan, 1, TimeUnit.HOURS);
             }
         }
@@ -90,7 +90,7 @@ public class SecretServiceImpl implements SecretService {
         meta.setOwnerId(ownerId);
         meta.setSecretName(request.getSecretName());
         meta.setMaxViews(request.getMaxViews());
-        meta.setShowTimeBomb(request.isShowTimeBomb());
+        meta.setShowTimeBomb(request.getShowTimeBomb());
         meta.setExpiresAt(Instant.ofEpochMilli(request.getExpiresAt()));
         meta.setViewTimeSeconds(request.getViewTimeSeconds());
         meta.setCreatedAt(Instant.now());
@@ -119,6 +119,7 @@ public class SecretServiceImpl implements SecretService {
                 .secretName(meta.getSecretName())
                 .expiresAt(meta.getExpiresAt())
                 .maxViews(meta.getMaxViews())
+                .isSuccess(true)
                 .viewTimeInSeconds(meta.getViewTimeSeconds())
                 .httpStatus(HttpStatus.CREATED)
                 .build();
@@ -266,7 +267,7 @@ public class SecretServiceImpl implements SecretService {
 
         List<SecretLogsResponseDTO.LogEntry> logsEntry = accessLogs.stream().map( log ->
                 SecretLogsResponseDTO.LogEntry.builder().ipAddress(log.getIpAddress()).deviceType(log.getDeviceType())
-                        .userAgent(log.getUserAgent()).accessedAt(log.getAccessedAt()).wasSuccessful(log.isWasSuccessful()).build()
+                        .userAgent(log.getUserAgent()).accessedAt(log.getAccessedAt()).wasSuccessful(log.getWasSuccessful()).build()
         ).toList();
 
         return SecretLogsResponseDTO.builder().isSuccess(true).logs(logsEntry).httpStatus(HttpStatus.OK).build();
@@ -302,7 +303,7 @@ public class SecretServiceImpl implements SecretService {
             log.setAccessedAt(Instant.now());
             log.setIpAddress(accessLog.getIpAddress());
             log.setUserAgent(accessLog.getUserAgent());
-            log.setWasSuccessful(accessLog.isWasSuccessful());
+            log.setWasSuccessful(accessLog.getWasSuccessful());
             log.setFailureReason(accessLog.getFailureReason());
 
             logRepo.save(log);

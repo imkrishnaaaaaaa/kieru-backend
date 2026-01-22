@@ -68,7 +68,7 @@ public class SecretController {
         SecretResponseDTO response = secretService.getSecretContent(id, password, accessingTime, ipAddress, userAgent);
 
         // 3. Return Logic (Handle HTTP Status based on success/failure)
-        if (response.isSuccess()) {
+        if (response.getIsSuccess()) {
             return ResponseEntity.ok(response);
         } else {
             // Logic: If it failed (Expired/Max Views), is it a 404, 410 (Gone), or 403?
