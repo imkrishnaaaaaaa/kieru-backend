@@ -114,6 +114,7 @@ public class AuthServiceImpl implements AuthService {
                     .userId(user.getId())
                     .email(user.getEmail())
                     .displayName(user.getDisplayName())
+                    .photoUrl(user.getPhotoUrl())
                     .role(user.getRole().name())
                     .subscription(user.getSubscription().name())
                     .loginProvider(provider.name())
