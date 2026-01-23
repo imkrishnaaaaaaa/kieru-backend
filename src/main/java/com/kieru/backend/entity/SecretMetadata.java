@@ -84,6 +84,7 @@ public class SecretMetadata {
             this.createdAt = Instant.now();
         }
         if (this.expiresAt == null) {
+            // Default 24 hours if not provided
             this.expiresAt = Instant.now().plusSeconds(24 * 3600);
         }
     }
