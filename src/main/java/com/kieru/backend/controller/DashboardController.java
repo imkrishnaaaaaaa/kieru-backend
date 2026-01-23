@@ -24,7 +24,7 @@ public class DashboardController {
     /**
      * 1. LIST MY SECRETS
      * Returns ONLY Metadata (Name, Status, Views Left).
-     * Usage: GET /api/dashboard/secrets?start=0&limit=10&isActive=true
+     * Usage: GET /api/dashboard/secrets?start=0&limit=10&onlyActive=true
      */
     @GetMapping("/secrets")
     public ResponseEntity<List<SecretMetadataResponseDTO>> getMySecrets(
@@ -37,7 +37,6 @@ public class DashboardController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // We pass user.getId() so we ONLY fetch secrets belonging to this user.
         List<SecretMetadataResponseDTO> secretsList = secretService.getMySecretsMeta(
                 user.getId(),
                 startOffset,

@@ -240,7 +240,7 @@ public class SecretServiceImpl implements SecretService {
     @Override
     public List<SecretMetadataResponseDTO> getMySecretsMeta(String ownerId, int startOffset, int limit, boolean onlyActive) {
         Pageable pageable = PageRequest.of(startOffset / limit, limit);
-        List<SecretMetadata> metedataList = metaRepo.findByOwnerIdAndIsActive(ownerId, onlyActive, pageable);
+        List<SecretMetadata> metedataList = onlyActive ? metaRepo.findByOwnerIdAndIsActive(ownerId, onlyActive, pageable) : metaRepo.findByOwnerId(ownerId, pageable);
 
         return metedataList.stream().map( data ->
                 SecretMetadataResponseDTO.builder().secretId(data.getId()).secretName(data.getSecretName())

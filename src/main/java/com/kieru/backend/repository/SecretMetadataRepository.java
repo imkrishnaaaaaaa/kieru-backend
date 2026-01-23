@@ -15,6 +15,7 @@ import java.util.List;
 public interface SecretMetadataRepository extends JpaRepository<SecretMetadata, String> {
 
     List<SecretMetadata> findByOwnerIdAndIsActive(String ownerId, boolean isActive, Pageable pageable);
+    List<SecretMetadata> findByOwnerId(String ownerId, Pageable pageable);
 
     void deleteById(String id);
 
