@@ -47,6 +47,7 @@ public class SecurityConfig {
                         // PUBLIC ENDPOINTS (No Login Required)
                         .requestMatchers(HttpMethod.POST, "/api/secrets").permitAll()       // Create Secret
                         .requestMatchers(HttpMethod.POST, "/api/secrets/*/access").permitAll() // View Secret
+                        .requestMatchers(HttpMethod.GET, "/api/secrets/validation").permitAll() // Validate Secret Availability
                         .requestMatchers("/api/assets/**").permitAll()  //for assets like background image
                         .requestMatchers("/api/auth/**").permitAll()                        // Login/Logout logic
 
