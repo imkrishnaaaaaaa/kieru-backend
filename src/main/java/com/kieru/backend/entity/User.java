@@ -35,9 +35,7 @@ public class User {
     private String id;
 
     @Email
-    @NotBlank
-    @Unique
-    @Column(nullable = false, length = 255, unique = true)
+    @Column(nullable = true, length = 255, unique = true)
     private String email;
 
     @NotBlank
@@ -52,19 +50,20 @@ public class User {
     @Column(length = 20, nullable = false)
     private KieruUtil.UserRole role;
 
+    // Added this back to ensure subscription is saved correctly
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private KieruUtil.SubscriptionPlan subscription;
 
+    @Column(length = 50)
+    private String sessionVersion;
+
+    // Added Login Provider (Needed for your Filter logic)
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private KieruUtil.LoginProvider loginProvider;
-
-
-    @Column(length = 50)
-    private String sessionVersion;
 
     @Column(nullable = false)
     private boolean isBanned = false;
@@ -90,6 +89,13 @@ public class User {
         }
         if (this.joinedAt == null) {
             this.joinedAt = Instant.now();
+        }
+        // Default Provider/Sub if missing
+        if (this.loginProvider == null) {
+            this.loginProvider = KieruUtil.LoginProvider.EMAIL;
+        }
+        if (this.subscription == null) {
+            this.subscription = KieruUtil.SubscriptionPlan.ANONYMOUS;
         }
     }
 }
