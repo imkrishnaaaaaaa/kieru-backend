@@ -13,6 +13,8 @@ public interface SecretService {
 
     SecretMetadataResponseDTO createSecret(CreateSecretRequest request, String ownerId, String ipAddress);
 
+    SecretMetadataResponseDTO validateSecret(String secretId);
+
     SecretResponseDTO getSecretContent(String id, String password, Instant accessedAt, String ipAddress, String userAgent);
 
     SecretMetadataResponseDTO deleteSecret(String secretId);

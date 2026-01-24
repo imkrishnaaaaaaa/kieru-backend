@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -25,7 +26,6 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
-        // Extract specific field errors (e.g. "email": "must be valid")
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(error ->
                 errors.put(error.getField(), error.getDefaultMessage())
@@ -43,20 +43,43 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 2. BUSINESS LOGIC ERRORS (Service throws RuntimeException)
+     * 2. MISSING PARAMETER ERRORS (e.g., ?secretId instead of ?id)
+     * Scenario: Required RequestParam is missing.
+     * Action: Return 400 Bad Request with clear message.
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParams(
+            MissingServletRequestParameterException ex,
+            HttpServletRequest request
+    ) {
+        String paramName = ex.getParameterName();
+        String paramType = ex.getParameterType();
+        String message = String.format("Missing required parameter: '%s' (Type: %s)", paramName, paramType);
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Missing Parameter")
+                .message(message)
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * 3. BUSINESS LOGIC ERRORS (Service throws RuntimeException)
      * Scenario: Rate limit reached, Secret not found (if strictly thrown), etc.
-     * Action: Return 400 Bad Request (or 429 if we create a specific exception later).
+     * Action: Return 400 Bad Request (or 429 if limit reached).
      */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeErrors(
             RuntimeException ex,
             HttpServletRequest request
     ) {
-        // Logic: You might want to switch status code based on message
-        // For now, we treat business logic failures as 400 (Client Error)
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
-        if (ex.getMessage().contains("Limit")) {
+        if (ex.getMessage().toLowerCase().contains("limit")) {
             status = HttpStatus.TOO_MANY_REQUESTS; // 429
         }
 
@@ -72,16 +95,16 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 3. CATCH-ALL (The "Oops" Handler)
+     * 4. CATCH-ALL (The "Oops" Handler)
      * Scenario: Database crash, NullPointer, OutOfMemory.
-     * Action: Return 500 Internal Server Error (Don't leak stack trace to user).
+     * Action: Return 500 Internal Server Error.
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericErrors(
             Exception ex,
             HttpServletRequest request
     ) {
-        // In Prod: LOG THIS ERROR so you can fix it!
+        // Log the full stack trace for debugging on the server
         ex.printStackTrace();
 
         ErrorResponse response = ErrorResponse.builder()

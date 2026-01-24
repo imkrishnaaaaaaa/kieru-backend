@@ -12,6 +12,8 @@ import java.time.Instant;
 public class CreateAccessLog {
     private String id;
 
+    private String secretId;
+
     private Instant accessedAt;
 
     private String ipAddress;

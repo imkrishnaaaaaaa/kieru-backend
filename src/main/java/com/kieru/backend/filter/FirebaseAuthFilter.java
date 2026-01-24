@@ -20,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -34,10 +35,8 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 1. Get the Token from Header
         String header = request.getHeader("Authorization");
 
-        // Skip filter if no token (Public endpoints handling left to SecurityConfig)
         if (header == null || !header.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -46,66 +45,96 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         String token = header.substring(7); // Remove "Bearer "
 
         try {
-            // 1. Verify with Google
+            // 1. Verify Token
             FirebaseToken decodedToken = firebaseAuth.verifyIdToken(token);
             String uid = decodedToken.getUid();
             String email = decodedToken.getEmail();
-            String name = decodedToken.getName(); // Might be null
-            String picture = decodedToken.getPicture(); // Might be null
+            String name = decodedToken.getName();
+            String picture = decodedToken.getPicture();
 
-            // 3. The "Mirror" Logic (Account Creation / Sync)
-            // We check if this user exists in OUR database.
+            // 2. Extract Provider (google.com, github.com, anonymous)
+            // Firebase puts this inside a map called "firebase" -> "sign_in_provider"
+            Map<String, Object> firebaseClaims = (Map<String, Object>) decodedToken.getClaims().get("firebase");
+            String signInProvider = (String) firebaseClaims.get("sign_in_provider");
+
+            // 3. Determine Plan & Provider Enum
+            KieruUtil.SubscriptionPlan plan;
+            KieruUtil.LoginProvider providerEnum;
+
+            if ("anonymous".equals(signInProvider) || email == null) {
+                plan = KieruUtil.SubscriptionPlan.ANONYMOUS;
+                providerEnum = KieruUtil.LoginProvider.UNKNOWN;
+            }
+            else {
+                plan = KieruUtil.SubscriptionPlan.EXPLORER; // Default for new registered users
+                if (signInProvider.contains("google")) providerEnum = KieruUtil.LoginProvider.GOOGLE;
+                else if (signInProvider.contains("github")) providerEnum = KieruUtil.LoginProvider.GITHUB;
+                else providerEnum = KieruUtil.LoginProvider.EMAIL;
+            }
+
+            // 4. Sync User to Database
             Optional<User> optionalUser = userRepository.findById(uid);
             User user;
 
             if (optionalUser.isEmpty()) {
-                // Auto-Create Account
+                // --- CREATE NEW USER ---
                 user = User.builder()
                         .id(uid)
                         .email(email)
-                        .displayName(name != null ? decodedToken.getName() : "User")
+                        .displayName(name != null ? name : "Anonymous User")
                         .photoUrl(picture)
                         .role(KieruUtil.UserRole.USER)
                         .joinedAt(Instant.now())
                         .lastLoginAt(Instant.now())
                         .secretsCreatedCount(0)
                         .isBanned(false)
+                        .subscription(plan)
+                        .loginProvider(providerEnum)
                         .build();
+
                 userRepository.save(user);
-            }
-            else {
-                // --- UPDATE LOGIN STATS ---
+            } else {
+                // --- UPDATE EXISTING USER ---
                 user = optionalUser.get();
+                // If an anonymous user converts to Google, upgrade them
+                if (user.getSubscription() == KieruUtil.SubscriptionPlan.ANONYMOUS && email != null) {
+                    user.setEmail(email);
+                    user.setDisplayName(name);
+                    user.setPhotoUrl(picture);
+                    user.setSubscription(KieruUtil.SubscriptionPlan.EXPLORER);
+                    user.setLoginProvider(providerEnum);
+                }
                 user.setLastLoginAt(Instant.now());
-                CompletableFuture.runAsync(() -> userRepository.save(user));
+
+                // Save async to not block the request
+                final User userToSave = user;
+                CompletableFuture.runAsync(() -> userRepository.save(userToSave));
             }
 
-            // 3. Ban Check
+            // 5. Check Ban Status
             if (user.isBanned()) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Account Suspended");
                 return;
             }
 
-            // 5. Tell Spring Security: "This user is Valid"
-            // We map our Enum Role to a Spring Authority ("ROLE_USER")
+            // 6. Set Spring Security Context
             SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
-
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    user, // Principal (The User Object)
-                    null, // Credentials (None, verified by Token)
-                    Collections.singletonList(authority) // Authorities (Roles)
+                    user, null, Collections.singletonList(authority)
             );
 
-            // Set the context! Now Controllers can access 'user'.
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
         } catch (FirebaseAuthException e) {
-            // Token is invalid/expired
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid Firebase Token: " + e.getMessage());
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid Token");
+            return;
+        } catch (Exception e) {
+            // Catch DB errors (ConstraintViolation) and show them clearly
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Database Sync Error: " + e.getMessage());
+            e.printStackTrace();
             return;
         }
 
-        // Continue the chain
         filterChain.doFilter(request, response);
     }
 }

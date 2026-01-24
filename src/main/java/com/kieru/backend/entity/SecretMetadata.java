@@ -49,6 +49,9 @@ public class SecretMetadata {
     @Column(name = "show_time_bomb", nullable = false)
     private boolean showTimeBomb = false;
 
+    @Column(name = "is_password_protected", nullable = false)
+    private boolean passwordProtected = false;
+
     /**
      * Use epoch millis (Instant) — Instant is easier to manage than manual long math.
      * Keeping it non-nullable ensures you always have an expiry.
@@ -68,7 +71,7 @@ public class SecretMetadata {
      * Cascade.REMOVE ensures logs are removed if metadata is removed.
      * orphanRemoval could be used if you remove entries from the collection on the parent and want them deleted.
      */
-    @OneToMany(mappedBy = "secret", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToMany(mappedBy = "secret", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER, orphanRemoval = true)
     private List<SecretAccessLog> accessLogs = new ArrayList<>();
 
     // When metadata is created

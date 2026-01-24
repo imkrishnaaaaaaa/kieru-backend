@@ -83,16 +83,20 @@ public class SecretServiceImpl implements SecretService {
                     .message("Daily Limit Reached").build();
         }
 
+        boolean isPasswordProtected = request.getPassword() != null && !request.getPassword().isBlank();
+
         String id = securityUtil.generateRandomId(10);
 
         SecretMetadata meta = new SecretMetadata();
         meta.setId(id);
         meta.setOwnerId(ownerId);
         meta.setSecretName(request.getSecretName());
-        meta.setMaxViews(request.getMaxViews());
-        meta.setShowTimeBomb(request.getShowTimeBomb());
-        meta.setExpiresAt(Instant.ofEpochMilli(request.getExpiresAt()));
-        meta.setViewTimeSeconds(request.getViewTimeSeconds());
+        meta.setMaxViews(request.getMaxViews() == null ? 1 : request.getMaxViews());
+        meta.setShowTimeBomb(request.getShowTimeBomb() != null && request.getShowTimeBomb());
+        meta.setPasswordProtected(isPasswordProtected);
+        meta.setExpiresAt(Instant.ofEpochMilli(request.getExpiresAt() != null ? request.getExpiresAt() : (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1))));
+        meta.setViewsLeft(meta.getMaxViews());
+        meta.setViewTimeSeconds(request.getViewTimeSeconds() == null ? 120 : request.getViewTimeSeconds());
         meta.setCreatedAt(Instant.now());
         meta.setActive(true);
         metaRepo.saveAndFlush(meta);
@@ -102,7 +106,7 @@ public class SecretServiceImpl implements SecretService {
         payload.setEncryptedContent(request.getContent());
         payload.setType(request.getType());
 
-        if(request.getPassword() != null && !request.getPassword().isBlank()){
+        if(isPasswordProtected){
             payload.setPasswordHash(securityUtil.hashPassword(request.getPassword()));
         }
 
@@ -123,6 +127,25 @@ public class SecretServiceImpl implements SecretService {
                 .viewTimeInSeconds(meta.getViewTimeSeconds())
                 .httpStatus(HttpStatus.CREATED)
                 .build();
+    }
+
+    @Override
+    public SecretMetadataResponseDTO validateSecret(String secretId) {
+        Optional<SecretMetadata> optionalMeta = metaRepo.findById(secretId);
+        if(optionalMeta.isPresent()){
+            SecretMetadata meta = optionalMeta.get();
+            return SecretMetadataResponseDTO.builder()
+                    .isSuccess(true)
+                    .secretId(meta.getId())
+                    .secretName(meta.getSecretName())
+                    .isActive(meta.isActive())
+                    .isPasswordProtected(meta.isPasswordProtected())
+                    .viewsLeft(meta.getViewsLeft())
+                    .httpStatus(HttpStatus.OK)
+                    .build();
+        }
+
+        return SecretMetadataResponseDTO.builder().isSuccess(false).build();
     }
 
     @Override
@@ -185,10 +208,26 @@ public class SecretServiceImpl implements SecretService {
 
         String redisKey = RedisKeyUtil.buildKey(RedisKeyUtil.KeyType.VIEWS_LEFT, id);
         Long viewsLeft = redisTemplate.opsForValue().decrement(redisKey);
-        if (viewsLeft == null || viewsLeft < -50) { // IF KEY NOT EXIST IN REDIS | <-100 is just a sanity check for weird start values
-            int dbViews = metaRepo.getViewsLeftById(id);
+        if (viewsLeft == null || viewsLeft < 0) { // IF KEY NOT EXIST IN REDIS | <-100 is just a sanity check for weird start values
+            Optional<SecretMetadata> optionalNewMeta = metaRepo.findById(id); // Custom 'AndIsActiveTrue' removed to handle detailed errors
+            if (optionalNewMeta.isEmpty()) {
+                return SecretResponseDTO.builder().isSuccess(false).message("Secret Not Found.").build();
+            }
+            SecretMetadata newMeta = optionalNewMeta.get();
+
+
+            int dbViews = newMeta.getViewsLeft();
             if(dbViews <= 0) {
-                return SecretResponseDTO.builder().isSuccess(false).message("Max views reached").build();
+                String message = "Max views reached";
+                CreateAccessLog accessLog = CreateAccessLog.builder().id(securityUtil.generateRandomId(10)).accessedAt(Instant.now()).wasSuccessful(false)
+                        .failureReason(message).accessedAt(accessedAt).userAgent(userAgent).ipAddress(ipAddress).build();
+                CompletableFuture.runAsync(() -> {
+                    meta.setActive(false);
+                    metaRepo.save(meta);
+                    saveAccessLog(accessLog);
+                });
+
+                return SecretResponseDTO.builder().isSuccess(false).message(message).build();
             }
 
             viewsLeft = (long) (dbViews - 1);
@@ -196,43 +235,29 @@ public class SecretServiceImpl implements SecretService {
             redisTemplate.opsForValue().set(redisKey, String.valueOf(viewsLeft), ttl, TimeUnit.SECONDS);
         }
 
-        if (viewsLeft >= 0) {
-            int finalViews = viewsLeft.intValue();
-            CompletableFuture.runAsync(() -> {
-                meta.setViewsLeft(finalViews);
-                metaRepo.save(meta);
-                if (finalViews == 0) {
-                    meta.setActive(false);
-                }
-            });
-
-            CreateAccessLog accessLog = CreateAccessLog.builder().id(securityUtil.generateRandomId(10)).accessedAt(Instant.now()).wasSuccessful(true)
-                    .accessedAt(accessedAt).userAgent(userAgent).ipAddress(ipAddress).build();
-            CompletableFuture.runAsync(() -> saveAccessLog(accessLog));
-
-            return SecretResponseDTO.builder()
-                    .isSuccess(true)
-                    .type(String.valueOf(payload.getType()))
-                    .content(payload.getEncryptedContent())
-                    .viewsLeft(finalViews)
-                    .viewTimeSeconds(meta.getViewTimeSeconds())
-                    .showTimeBomb(meta.isShowTimeBomb())
-                    .expiresAt(meta.getExpiresAt())
-                    .build();
-        }
-        else {
-            String message = "Max views reached";
-            CreateAccessLog accessLog = CreateAccessLog.builder().id(securityUtil.generateRandomId(10)).accessedAt(Instant.now()).wasSuccessful(false)
-                    .failureReason(message).accessedAt(accessedAt).userAgent(userAgent).ipAddress(ipAddress).build();
-            CompletableFuture.runAsync(() -> {
+        int finalViews = viewsLeft.intValue();
+        CompletableFuture.runAsync(() -> {
+            meta.setViewsLeft(finalViews);
+            metaRepo.save(meta);
+            if (finalViews == 0) {
                 meta.setActive(false);
                 metaRepo.save(meta);
-                saveAccessLog(accessLog);
-            });
+            }
+        });
 
-            return SecretResponseDTO.builder().isSuccess(false).message(message).build();
-        }
+        CreateAccessLog accessLog = CreateAccessLog.builder().id(securityUtil.generateRandomId(10)).secretId(meta.getId()).accessedAt(Instant.now()).wasSuccessful(true)
+                .accessedAt(accessedAt).userAgent(userAgent).ipAddress(ipAddress).build();
+        CompletableFuture.runAsync(() -> saveAccessLog(accessLog));
 
+        return SecretResponseDTO.builder()
+                .isSuccess(true)
+                .type(String.valueOf(payload.getType()))
+                .content(payload.getEncryptedContent())
+                .viewsLeft(finalViews)
+                .viewTimeSeconds(meta.getViewTimeSeconds())
+                .showTimeBomb(meta.isShowTimeBomb())
+                .expiresAt(meta.getExpiresAt())
+                .build();
 
     }
 
@@ -244,7 +269,7 @@ public class SecretServiceImpl implements SecretService {
 
         return metedataList.stream().map( data ->
                 SecretMetadataResponseDTO.builder().secretId(data.getId()).secretName(data.getSecretName())
-                        .maxViews(data.getMaxViews()).currentViews(data.getMaxViews() - data.getViewsLeft())
+                        .maxViews(data.getMaxViews()).currentViews(data.getMaxViews() - data.getViewsLeft()).isPasswordProtected(data.isPasswordProtected())
                         .createdAt(data.getCreatedAt()).expiresAt(data.getExpiresAt()).showTimeBomb(data.isShowTimeBomb())
                         .viewTimeInSeconds(data.getViewTimeSeconds()).isActive(data.isActive()).build()
         ).toList();
@@ -297,7 +322,10 @@ public class SecretServiceImpl implements SecretService {
         try {
             SecretAccessLog log = new SecretAccessLog();
 
-            SecretMetadata ref = metaRepo.getReferenceById(accessLog.getId());
+            // Actually fetch the row from DB. It ensures the object is "Real" and safe to use.
+            SecretMetadata ref = metaRepo.findById(accessLog.getSecretId()).orElse(null);
+
+            if (ref == null) return; // If secret doesn't exist, don't log
             log.setSecret(ref);
 
             log.setAccessedAt(Instant.now());

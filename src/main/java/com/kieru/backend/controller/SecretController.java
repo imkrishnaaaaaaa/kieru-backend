@@ -70,11 +70,19 @@ public class SecretController {
         // 3. Return Logic (Handle HTTP Status based on success/failure)
         if (response.getIsSuccess()) {
             return ResponseEntity.ok(response);
-        } else {
-            // Logic: If it failed (Expired/Max Views), is it a 404, 410 (Gone), or 403?
-            // For now, returning 200 OK with success=false flag is easier for React to handle.
-            return ResponseEntity.status(HttpStatus.OK).body(response);
         }
+
+        return ResponseEntity.status(response.getHttpStatus()).body(response);
+    }
+
+    @GetMapping("/validation")
+    public ResponseEntity<SecretMetadataResponseDTO> validateSecret(
+        @RequestParam(name = "id") String secretId
+    )
+    {
+        SecretMetadataResponseDTO response = secretService.validateSecret(secretId);
+
+        return ResponseEntity.status(response.getHttpStatus()).body(response);
     }
 
     // --- HELPER: Get Real IP (Behind Load Balancers/Cloudflare) ---

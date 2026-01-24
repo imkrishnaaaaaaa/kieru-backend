@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SecretMetadataRepository extends JpaRepository<SecretMetadata, String> {
@@ -18,8 +19,6 @@ public interface SecretMetadataRepository extends JpaRepository<SecretMetadata, 
     List<SecretMetadata> findByOwnerId(String ownerId, Pageable pageable);
 
     void deleteById(String id);
-
-    int getViewsLeftById(String id);
 
     @Modifying
     @Transactional
