@@ -31,7 +31,7 @@ public class DashboardController {
             @AuthenticationPrincipal User user,
             @RequestParam(name = "start", defaultValue = "0") int startOffset,
             @RequestParam(name = "limit", defaultValue = "10") int limit,
-            @RequestParam(name = "isActive", defaultValue = "true") boolean onlyActive
+            @RequestParam(name = "onlyActive", defaultValue = "false") boolean onlyActive
     ) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -77,7 +77,7 @@ public class DashboardController {
      * 3. KILL SWITCH
      * Allows the owner to delete the secret immediately.
      */
-    @DeleteMapping("/secrets/{id}")
+    @DeleteMapping("/secrets/delete/{id}")
     public ResponseEntity<String> deleteSecret(
             @PathVariable String id,
             @AuthenticationPrincipal User user

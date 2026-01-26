@@ -85,6 +85,21 @@ public class SecretController {
         return ResponseEntity.status(response.getHttpStatus()).body(response);
     }
 
+    @PostMapping("/secrets/update-password/{id}")
+    public ResponseEntity<SecretResponseDTO> updateSecretPassword(
+            @PathVariable String id,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal User user
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String password = body.get("password");
+        SecretResponseDTO response =  secretService.updateSecretPassword(id, password);
+        return ResponseEntity.ok(response);
+    }
+
     // --- HELPER: Get Real IP (Behind Load Balancers/Cloudflare) ---
     private String getClientIp(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");
