@@ -53,4 +53,16 @@ public class AssetsController {
                 .cacheControl(CacheControl.maxAge(24, TimeUnit.HOURS))
                 .body(assetService.getFileSizeLimits());
     }
+
+    /**
+     * 3. GET File Size Limits
+     * Returns: { "anonymous": 0, "explorer": 5242880, ... }
+     * Cache: 1 Day
+     */
+    @GetMapping("/subscriptions/daily-secret-limits")
+    public ResponseEntity<Map<String, Integer>> getSubscriptionDailyLimits() {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(24, TimeUnit.HOURS))
+                .body(assetService.getDailySecretLimits());
+    }
 }

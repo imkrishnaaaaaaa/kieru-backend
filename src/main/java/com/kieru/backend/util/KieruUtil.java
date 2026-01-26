@@ -143,7 +143,8 @@ public class KieruUtil {
     public enum UserRole {
         USER("user"),
         ADMIN("admin"),
-        SUPER_ADMIN("super_admin");
+        SUPER_ADMIN("super_admin"),
+        TESTER("tester");
 
         private final String role;
         UserRole(String role){

@@ -42,4 +42,13 @@ public class AssetServiceImpl implements AssetService {
                         plan -> (long) kieruUtil.getUserFileSizeLimit(plan)
                 ));
     }
+
+    @Override
+    public Map<String, Integer> getDailySecretLimits() {
+        return Arrays.stream(KieruUtil.SubscriptionPlan.values())
+                .collect(Collectors.toMap(
+                        KieruUtil.SubscriptionPlan::getName,
+                        kieruUtil::getUserDailyCreateLimit
+                ));
+    }
 }

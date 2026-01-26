@@ -86,6 +86,7 @@ public class SecretServiceImpl implements SecretService {
 
         boolean isPasswordProtected = request.getPassword() != null && !request.getPassword().isBlank();
         Instant expiryInstant = Instant.ofEpochMilli(request.getExpiresAt() != null ? request.getExpiresAt() : (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)));
+        int maxViews = request.getMaxViews() == null ? 1 : request.getMaxViews();
 
         String id = securityUtil.generateRandomId(10);
 
@@ -93,11 +94,11 @@ public class SecretServiceImpl implements SecretService {
         meta.setId(id);
         meta.setOwnerId(ownerId);
         meta.setSecretName(request.getSecretName());
-        meta.setMaxViews(request.getMaxViews() == null ? 1 : request.getMaxViews());
+        meta.setMaxViews(maxViews);
         meta.setShowTimeBomb(request.getShowTimeBomb() != null && request.getShowTimeBomb());
         meta.setPasswordProtected(isPasswordProtected);
         meta.setExpiresAt(expiryInstant);
-        meta.setViewsLeft(meta.getMaxViews());
+        meta.setViewsLeft(maxViews);
         meta.setViewTimeSeconds(request.getViewTimeSeconds() == null ? 120 : request.getViewTimeSeconds());
         meta.setCreatedAt(Instant.now());
         meta.setActive(true);
