@@ -21,6 +21,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -63,7 +64,7 @@ public class SecretServiceImpl implements SecretService {
         }
         String todayString = LocalDate.now().toString();
         KieruUtil.SubscriptionPlan planEnum = KieruUtil.SubscriptionPlan.getEnumByName(userPlan);
-        int dailyLimit = kieruUtil.getDailyCreateLimit(planEnum);
+        int dailyLimit = kieruUtil.getUserDailyCreateLimit(planEnum);
 
         String limitKey;
         if (ownerId != null && !ownerId.isBlank()) {
@@ -84,6 +85,7 @@ public class SecretServiceImpl implements SecretService {
         }
 
         boolean isPasswordProtected = request.getPassword() != null && !request.getPassword().isBlank();
+        Instant expiryInstant = Instant.ofEpochMilli(request.getExpiresAt() != null ? request.getExpiresAt() : (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)));
 
         String id = securityUtil.generateRandomId(10);
 
@@ -94,7 +96,7 @@ public class SecretServiceImpl implements SecretService {
         meta.setMaxViews(request.getMaxViews() == null ? 1 : request.getMaxViews());
         meta.setShowTimeBomb(request.getShowTimeBomb() != null && request.getShowTimeBomb());
         meta.setPasswordProtected(isPasswordProtected);
-        meta.setExpiresAt(Instant.ofEpochMilli(request.getExpiresAt() != null ? request.getExpiresAt() : (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1))));
+        meta.setExpiresAt(expiryInstant);
         meta.setViewsLeft(meta.getMaxViews());
         meta.setViewTimeSeconds(request.getViewTimeSeconds() == null ? 120 : request.getViewTimeSeconds());
         meta.setCreatedAt(Instant.now());
@@ -112,7 +114,7 @@ public class SecretServiceImpl implements SecretService {
 
         payloadRepo.save(payload);
 
-        long ttlSeconds = (request.getExpiresAt() - System.currentTimeMillis()) / 1000;
+        long ttlSeconds = Duration.between(Instant.now(), expiryInstant).getSeconds();
         if (ttlSeconds > 0) {
             String redisKey = RedisKeyUtil.buildKey(RedisKeyUtil.KeyType.VIEWS_LEFT) + id;
             redisTemplate.opsForValue().set(redisKey, String.valueOf(meta.getMaxViews()), ttlSeconds, TimeUnit.SECONDS);
@@ -292,7 +294,7 @@ public class SecretServiceImpl implements SecretService {
 
         List<SecretLogsResponseDTO.LogEntry> logsEntry = accessLogs.stream().map( log ->
                 SecretLogsResponseDTO.LogEntry.builder().ipAddress(log.getIpAddress()).deviceType(log.getDeviceType())
-                        .userAgent(log.getUserAgent()).accessedAt(log.getAccessedAt()).wasSuccessful(log.getWasSuccessful()).build()
+                        .userAgent(log.getUserAgent()).accessedAt(log.getAccessedAt()).wasSuccessful(log.getWasSuccessful()).failureReason(log.getFailureReason()).build()
         ).toList();
 
         return SecretLogsResponseDTO.builder().isSuccess(true).logs(logsEntry).httpStatus(HttpStatus.OK).build();

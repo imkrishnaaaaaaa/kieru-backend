@@ -34,6 +34,7 @@ public class SecretLogsResponseDTO {
         private String userAgent;      // Raw browser string
         private Instant accessedAt;
         private Boolean wasSuccessful; // True = Viewed, False = Wrong Password
+        private String failureReason;
     }
 
 }
