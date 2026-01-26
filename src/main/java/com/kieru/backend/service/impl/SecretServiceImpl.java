@@ -59,7 +59,7 @@ public class SecretServiceImpl implements SecretService {
             } else {
                 KieruUtil.SubscriptionPlan planEnum = userRepo.findSubscriptionPlanById(ownerId);
                 userPlan = planEnum == null ? KieruUtil.SubscriptionPlan.EXPLORER.getName() : planEnum.getName();
-                redisTemplate.opsForValue().set(redisOwnerSubscriptionKey, userPlan, 1, TimeUnit.HOURS);
+                redisTemplate.opsForValue().set(redisOwnerSubscriptionKey, userPlan, 5, TimeUnit.MINUTES);
             }
         }
         String todayString = LocalDate.now().toString();

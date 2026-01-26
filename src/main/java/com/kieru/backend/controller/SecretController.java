@@ -85,7 +85,7 @@ public class SecretController {
         return ResponseEntity.status(response.getHttpStatus()).body(response);
     }
 
-    @PostMapping("/secrets/update-password/{id}")
+    @PostMapping("/update-password/{id}")
     public ResponseEntity<SecretResponseDTO> updateSecretPassword(
             @PathVariable String id,
             @RequestBody Map<String, String> body,
