@@ -14,12 +14,15 @@ public class SubscriptionRateLimitConfig {
     private Explorer explorer = new Explorer();
     private Challenger challenger = new Challenger();
     private Dominator dominator = new Dominator();
+    private Tester tester = new Tester();
 
     @Data // Use @Data for inner classes too
     public static class Anonymous {
         private int createLimitDaily;
         private int createLimitWeekly;
         private int createLimitMonthly;
+        private int charLimit;
+        private int fileSizeLimit;
     }
 
     @Data
@@ -27,6 +30,8 @@ public class SubscriptionRateLimitConfig {
         private int createLimitDaily;
         private int createLimitWeekly;
         private int createLimitMonthly;
+        private int charLimit;
+        private int fileSizeLimit;
     }
 
     @Data
@@ -34,6 +39,8 @@ public class SubscriptionRateLimitConfig {
         private int createLimitDaily;
         private int createLimitWeekly;
         private int createLimitMonthly;
+        private int charLimit;
+        private int fileSizeLimit;
     }
 
     @Data
@@ -41,5 +48,16 @@ public class SubscriptionRateLimitConfig {
         private int createLimitDaily;
         private int createLimitWeekly;
         private int createLimitMonthly;
+        private int charLimit;
+        private int fileSizeLimit;
+    }
+
+    @Data
+    public static class Tester {
+        private int createLimitDaily;
+        private int createLimitWeekly;
+        private int createLimitMonthly;
+        private int charLimit;
+        private int fileSizeLimit;
     }
 }

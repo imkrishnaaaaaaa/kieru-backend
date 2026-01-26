@@ -33,8 +33,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
 
                 // 2. ENABLE CORS (Cross-Origin Resource Sharing)
-                // Why: Your React app runs on localhost:3000. Spring runs on localhost:8080.
-                // Browsers block this by default unless we say "Allow localhost:3000".
+                // Why: Your React app runs on localhost:5173. Spring runs on localhost:8080.
+                // Browsers block this by default unless we say "Allow localhost:5173".
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 // 3. STATELESS SESSION
@@ -44,16 +44,32 @@ public class SecurityConfig {
 
                 // 4. THE RULES (Public vs Private)
                 .authorizeHttpRequests(auth -> auth
-                        // PUBLIC ENDPOINTS (No Login Required)
-                        .requestMatchers(HttpMethod.POST, "/api/secrets").permitAll()       // Create Secret
-                        .requestMatchers(HttpMethod.POST, "/api/secrets/*/access").permitAll() // View Secret
-                        .requestMatchers(HttpMethod.GET, "/api/secrets/validation").permitAll() // Validate Secret Availability
-                        .requestMatchers("/api/assets/**").permitAll()  //for assets like background image
-                        .requestMatchers("/api/auth/**").permitAll()                        // Login/Logout logic
+                        // --- PUBLIC ENDPOINTS (No Login Required) ---
 
-                        // PRIVATE ENDPOINTS (Login Required)
-                        .requestMatchers("/api/dashboard/**").authenticated()               // Dashboard
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")                  // Admin Stats
+                        // 1. Assets (Backgrounds, Limits, Configs)
+                        // MUST be public so Login Page can load the background image
+                        .requestMatchers("/api/assets/**").permitAll()
+
+                        // 2. Auth Logic (Login, Register)
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // 3. Secret Access (The "Receiver" View)
+                        // Validate secret exists before asking for password
+                        .requestMatchers(HttpMethod.GET, "/api/secrets/validation").permitAll()
+                        // Attempt to unlock secret (might need password, but not user login)
+                        .requestMatchers(HttpMethod.POST, "/api/secrets/*/access").permitAll()
+
+
+                        // --- PRIVATE ENDPOINTS (Login Required) ---
+
+                        // Create Secret (Only logged-in users, even if Anonymous)
+                        .requestMatchers(HttpMethod.POST, "/api/secrets/create").authenticated()
+
+                        // Dashboard Data
+                        .requestMatchers("/api/dashboard/**").authenticated()
+
+                        // Admin Stats
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         // CATCH-ALL: Everything else needs login
                         .anyRequest().authenticated()
@@ -71,7 +87,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allow your frontend (Adjust port if needed)
+        // Allow your frontend (Vite default is 5173, CRA is 3000)
         configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
 
         // Allow standard HTTP methods

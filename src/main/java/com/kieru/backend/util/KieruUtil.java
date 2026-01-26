@@ -6,6 +6,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class KieruUtil {
@@ -30,7 +33,8 @@ public class KieruUtil {
         ANONYMOUS("anonymous"),
         EXPLORER("explorer"),
         CHALLENGER("challenger"),
-        DOMINATOR("dominator");
+        DOMINATOR("dominator"),
+        TESTER("tester");
 
         private final String name;
         SubscriptionPlan(String plan){
@@ -42,6 +46,10 @@ public class KieruUtil {
                 if(plan.getName().equalsIgnoreCase(planName)) return plan;
             }
             return ANONYMOUS; // Default safe fallback
+        }
+
+        public static List<SubscriptionPlan> getSubscriptions(){
+            return new ArrayList<>(Arrays.asList(values()));
         }
     }
 
@@ -74,14 +82,15 @@ public class KieruUtil {
     }
 
 
-    public int getDailyCreateLimit(SubscriptionPlan plan) {
+    public int getUserDailyCreateLimit(SubscriptionPlan plan) {
         if (plan == null) return config.getAnonymous().getCreateLimitDaily();
 
         return switch (plan) {
-            case ANONYMOUS -> config.getAnonymous().getCreateLimitDaily(); // Fixed to use Anonymous config
+            case ANONYMOUS -> config.getAnonymous().getCreateLimitDaily();
             case EXPLORER -> config.getExplorer().getCreateLimitDaily();
             case CHALLENGER -> config.getChallenger().getCreateLimitDaily();
             case DOMINATOR -> config.getDominator().getCreateLimitDaily();
+            case TESTER -> config.getTester().getCreateLimitDaily();
         };
     }
 
@@ -91,6 +100,7 @@ public class KieruUtil {
             case EXPLORER -> config.getExplorer().getCreateLimitWeekly();
             case CHALLENGER -> config.getChallenger().getCreateLimitWeekly();
             case DOMINATOR -> config.getDominator().getCreateLimitWeekly();
+            case TESTER -> config.getTester().getCreateLimitWeekly();
         };
     }
 
@@ -100,6 +110,31 @@ public class KieruUtil {
             case EXPLORER -> config.getExplorer().getCreateLimitMonthly();
             case CHALLENGER -> config.getChallenger().getCreateLimitMonthly();
             case DOMINATOR -> config.getDominator().getCreateLimitMonthly();
+            case TESTER -> config.getTester().getCreateLimitMonthly();
+        };
+    }
+
+    public int getUserCharLimit(SubscriptionPlan plan) {
+        if (plan == null) return config.getAnonymous().getCreateLimitDaily();
+
+        return switch (plan) {
+            case ANONYMOUS -> config.getAnonymous().getCharLimit(); // Fixed to use Anonymous config
+            case EXPLORER -> config.getExplorer().getCharLimit();
+            case CHALLENGER -> config.getChallenger().getCharLimit();
+            case DOMINATOR -> config.getDominator().getCharLimit();
+            case TESTER -> config.getTester().getCharLimit();
+        };
+    }
+
+    public int getUserFileSizeLimit(SubscriptionPlan plan) {
+        if (plan == null) return config.getAnonymous().getFileSizeLimit();
+
+        return switch (plan) {
+            case ANONYMOUS -> config.getAnonymous().getFileSizeLimit(); // Fixed to use Anonymous config
+            case EXPLORER -> config.getExplorer().getFileSizeLimit();
+            case CHALLENGER -> config.getChallenger().getFileSizeLimit();
+            case DOMINATOR -> config.getDominator().getFileSizeLimit();
+            case TESTER -> config.getTester().getFileSizeLimit();
         };
     }
 
