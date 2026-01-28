@@ -28,7 +28,6 @@ public class SecretMetadata {
     @Column(length = 50)
     private String id;
 
-    // null => anonymous
     @Column(name = "owner_id", length = 50)
     private String ownerId;
 
@@ -52,10 +51,6 @@ public class SecretMetadata {
     @Column(name = "is_password_protected", nullable = false)
     private boolean passwordProtected = false;
 
-    /**
-     * Use epoch millis (Instant) — Instant is easier to manage than manual long math.
-     * Keeping it non-nullable ensures you always have an expiry.
-     */
     @NotNull
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
@@ -66,15 +61,12 @@ public class SecretMetadata {
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
-    /**
-     * One-to-many logs. mappedBy points to the field 'secret' in SecretAccessLog.
-     * Cascade.REMOVE ensures logs are removed if metadata is removed.
-     * orphanRemoval could be used if you remove entries from the collection on the parent and want them deleted.
-     */
-    @OneToMany(mappedBy = "secret", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER, orphanRemoval = true)
+    @OneToOne(mappedBy = "metadata", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
+    private SecretPayload payload;
+
+    @OneToMany(mappedBy = "secret", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<SecretAccessLog> accessLogs = new ArrayList<>();
 
-    // When metadata is created
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -87,7 +79,6 @@ public class SecretMetadata {
             this.createdAt = Instant.now();
         }
         if (this.expiresAt == null) {
-            // Default 24 hours if not provided
             this.expiresAt = Instant.now().plusSeconds(24 * 3600);
         }
     }
