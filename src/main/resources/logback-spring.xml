@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- 1. CONSOLE APPENDER (For You - Simple Text) -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- Pattern: Date Time [Thread] Level Logger - Message -->
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 2. LOGTAIL APPENDER (For Cloud - Auto JSON) -->
+    <!-- This class automatically formats as JSON for Better Stack -->
+    <appender name="LOGTAIL" class="com.logtail.logback.LogtailAppender">
+        <appName>kieru-backend</appName>
+        <sourceToken>${LOGTAIL_SOURCE_TOKEN}</sourceToken>
+        <!-- Capture these extra fields if present in MDC -->
+        <mdcFields>userId,requestId</mdcFields>
+    </appender>
+
+    <!-- 3. THE MASTER SWITCH -->
+    <root level="INFO">
+        <!-- Always log to Console -->
+        <appender-ref ref="CONSOLE"/>
+
+        <!-- Only log to Cloud if we have a token (e.g. in Prod) -->
+        <!-- You can remove this 'if' check if you always want cloud logs -->
+        <appender-ref ref="LOGTAIL"/>
+    </root>
+
+</configuration>
