@@ -67,12 +67,7 @@ public class SecretController {
         // Note: You need to update your Interface return type if you changed it to SecretResponseDTO
         SecretResponseDTO response = secretService.getSecretContent(id, password, accessingTime, ipAddress, userAgent);
 
-        // 3. Return Logic (Handle HTTP Status based on success/failure)
-        if (response.getIsSuccess()) {
-            return ResponseEntity.ok(response);
-        }
-
-        return ResponseEntity.status(response.getHttpStatus()).body(response);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/validation")
