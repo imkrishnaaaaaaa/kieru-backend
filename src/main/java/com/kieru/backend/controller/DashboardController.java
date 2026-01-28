@@ -29,7 +29,7 @@ public class DashboardController {
     @GetMapping("/secrets")
     public ResponseEntity<List<SecretMetadataResponseDTO>> getMySecrets(
             @AuthenticationPrincipal User user,
-            @RequestParam(name = "start", defaultValue = "0") int startOffset,
+            @RequestParam(name = "page", defaultValue = "0") int pageNumber,
             @RequestParam(name = "limit", defaultValue = "10") int limit,
             @RequestParam(name = "onlyActive", defaultValue = "false") boolean onlyActive
     ) {
@@ -39,7 +39,7 @@ public class DashboardController {
 
         List<SecretMetadataResponseDTO> secretsList = secretService.getMySecretsMeta(
                 user.getId(),
-                startOffset,
+                pageNumber,
                 limit,
                 onlyActive
         );
