@@ -1,5 +1,6 @@
 package com.kieru.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -23,6 +24,7 @@ public class SecretAccessLog {
     // Many logs → one SecretMetadata. Use LAZY so loading logs doesn't fetch the entire payload.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "secret_id", nullable = false)
+    @JsonIgnore
     private SecretMetadata secret;
 
     @NotNull

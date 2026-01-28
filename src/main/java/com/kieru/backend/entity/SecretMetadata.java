@@ -1,5 +1,6 @@
 package com.kieru.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -62,9 +63,11 @@ public class SecretMetadata {
     private boolean isDeleted = false;
 
     @OneToOne(mappedBy = "metadata", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     private SecretPayload payload;
 
     @OneToMany(mappedBy = "secret", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonIgnore
     private List<SecretAccessLog> accessLogs = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)

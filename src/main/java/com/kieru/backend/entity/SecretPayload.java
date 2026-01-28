@@ -1,5 +1,6 @@
 package com.kieru.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kieru.backend.util.KieruUtil;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -25,6 +26,7 @@ public class SecretPayload {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @MapsId
     @JoinColumn(name = "id")
+    @JsonIgnore
     private SecretMetadata metadata;
 
     // hashed password (nullable if secret is public / no password)
