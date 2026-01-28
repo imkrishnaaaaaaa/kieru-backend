@@ -183,5 +183,51 @@ public class KieruUtil {
         return Math.max(0, eod - now);
     }
 
+    public static String millisToDateString(long millis) {
+        return  millisToDateString(millis, defaultDateFormat);
+    }
 
+    public static String millisToDateString(long millis, String dateFormat) {
+        return millisToDateString(millis, dateFormat, defaultTimeZone);
+    }
+
+    public static String millisToDateString(long millis, String dateFormat, String timeZone) {
+        String safePattern = (dateFormat == null || dateFormat.isBlank()) ? defaultDateFormat : dateFormat;
+        String safeZone = (timeZone == null || timeZone.isBlank()) ? defaultTimeZone : timeZone;
+
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(safePattern)
+                    .withZone(ZoneId.of(safeZone));
+            return formatter.format(Instant.ofEpochMilli(millis));
+        }
+        catch (IllegalArgumentException e) {
+            return Instant.ofEpochMilli(millis).toString();
+        }
+    }
+
+    public static String millisToRelativeTime(long millis) {
+        if (millis < 1000) return millis + " ms";
+
+        long seconds = millis / 1000;
+        long minutes = seconds / 60;
+        long hours = minutes / 60;
+        long days = hours / 24;
+
+        StringBuilder sb = new StringBuilder();
+
+        if (days > 0) {
+            sb.append(days).append(" days ");
+        }
+        if (hours > 0) {
+            sb.append(hours % 24).append(" hours ");
+        }
+        if (minutes > 0) {
+            sb.append(minutes % 60).append(" minutes ");
+        }
+        if (seconds > 0 || sb.length() == 0) {
+            sb.append(seconds % 60).append(" seconds");
+        }
+
+        return sb.toString().trim();
+    }
 }

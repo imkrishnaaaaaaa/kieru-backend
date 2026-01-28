@@ -9,8 +9,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface SecretMetadataRepository extends JpaRepository<SecretMetadata, String> {
@@ -20,10 +20,6 @@ public interface SecretMetadataRepository extends JpaRepository<SecretMetadata, 
 
     void deleteById(String id);
 
-    @Modifying
-    @Transactional
-    @Query("UPDATE SecretMetadata s SET s.viewsLeft = s.viewsLeft - 1 WHERE s.id = :id AND s.viewsLeft > 0")
-    void decrementViewsLeft(@Param("id") String id);
 
     /**
      * Strictly disables the secret.
@@ -33,4 +29,7 @@ public interface SecretMetadataRepository extends JpaRepository<SecretMetadata, 
     @Transactional
     @Query("UPDATE SecretMetadata s SET s.isActive = false WHERE s.id = :id")
     void disableSecret(@Param("id") String id);
+
+    @Query("SELECT s FROM SecretMetadata s WHERE s.isActive = true AND s.expiresAt < :now")
+    List<SecretMetadata> findExpiredSecrets(@Param("now") Instant now, Pageable pageable);
 }
