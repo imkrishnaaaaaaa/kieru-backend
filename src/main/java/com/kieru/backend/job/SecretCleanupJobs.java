@@ -17,7 +17,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class SecretCleanupJob {
+public class SecretCleanupJobs {
 
     private final SecretMetadataRepository metaRepo;
 
@@ -63,8 +63,10 @@ public class SecretCleanupJob {
         metaRepo.saveAll(expiredSecrets);
 
         long duration = System.currentTimeMillis() - startTime;
-        log.info("Expire Secrets Job :: Finished. Expired {} secrets in {}.",
+        log.info("Expire Secrets Job :: Finished. Expired {} secrets in {} at ",
                 expiredSecrets.size(),
-                KieruUtil.millisToRelativeTime(duration));
+                KieruUtil.millisToRelativeTime(duration),
+                KieruUtil.millisToDateString(System.currentTimeMillis())
+        );
     }
 }
