@@ -23,5 +23,5 @@ public interface SecretService {
 
     SecretLogsResponseDTO getSecretLogs(String secretId, Pageable pageable);
 
-    SecretResponseDTO updateSecretPassword(String secretId, String newPassword);
+    SecretResponseDTO updateSecretPassword(String secretId, String newPassword, String ownerId);
 }

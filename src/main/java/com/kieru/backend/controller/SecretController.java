@@ -1,13 +1,14 @@
 package com.kieru.backend.controller;
 
 import com.kieru.backend.dto.CreateSecretRequest;
-import com.kieru.backend.dto.SecretMetadataResponseDTO; // Assuming you kept the DTO name from your previous snippets
+import com.kieru.backend.dto.SecretMetadataResponseDTO;
 import com.kieru.backend.dto.SecretResponseDTO;
 import com.kieru.backend.entity.User;
 import com.kieru.backend.service.SecretService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,65 +20,58 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/secrets")
 @RequiredArgsConstructor
+@Slf4j
 public class SecretController {
 
     private final SecretService secretService;
 
-    /**
-     * 1. CREATE SECRET
-     * URL: POST /api/secrets
-     * Access: Public (Anonymous) or Authenticated
-     */
     @PostMapping("/create")
     public ResponseEntity<SecretMetadataResponseDTO> createSecret(
             @Valid @RequestBody CreateSecretRequest request,
-            @AuthenticationPrincipal User user, // Injected by Spring Security (Null if anonymous)
-            HttpServletRequest httpRequest // To get IP Address
+            @AuthenticationPrincipal User user,
+            HttpServletRequest httpRequest
     ) {
-        // 1. Extract Identity
         String ownerId = (user != null) ? user.getId() : null;
         String ipAddress = getClientIp(httpRequest);
 
-        // 2. Call Service
+        log.info("Controller :: Create secret request from IP: {}, Owner: {}", ipAddress, ownerId);
+
         SecretMetadataResponseDTO response = secretService.createSecret(request, ownerId, ipAddress);
-        // 3. Return JSON
+
+        log.info("Controller :: Create secret response - Success: {}, SecretId: {}", response.getIsSuccess(), response.getSecretId());
+
         return ResponseEntity.status(response.getHttpStatus()).body(response);
     }
 
-    /**
-     * 2. VIEW SECRET CONTENT
-     * URL: POST /api/secrets/{id}/access
-     * Access: Public (Password Protected via Body)
-     * Why POST? Because sending passwords in GET URL params is a security risk (browser history logs it).
-     */
     @PostMapping("/{id}/access")
     public ResponseEntity<SecretResponseDTO> getSecretContent(
             @PathVariable String id,
-            @RequestBody Map<String, String> body, // Expects {"password": "..."}
+            @RequestBody(required = false) Map<String, String> body,
             HttpServletRequest httpRequest
     ) {
-
         Instant accessingTime = Instant.now();
-        // 1. Extract Details
-        String password = body.get("password");
+        String password = (body != null) ? body.get("password") : null;
         String ipAddress = getClientIp(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
 
-        // 2. Call Service
-        // Note: You need to update your Interface return type if you changed it to SecretResponseDTO
+        log.info("Controller :: Access secret request. SecretId: {}, IP: {}", id, ipAddress);
+
         SecretResponseDTO response = secretService.getSecretContent(id, password, accessingTime, ipAddress, userAgent);
 
-        return ResponseEntity.ok(response);
+        HttpStatus status = response.getHttpStatus() != null ? response.getHttpStatus() : HttpStatus.OK;
+        return ResponseEntity.status(status).body(response);
     }
 
     @GetMapping("/validation")
     public ResponseEntity<SecretMetadataResponseDTO> validateSecret(
-        @RequestParam(name = "id") String secretId
-    )
-    {
+            @RequestParam(name = "id") String secretId
+    ) {
+        log.info("Controller :: Validate secret request. SecretId: {}", secretId);
+
         SecretMetadataResponseDTO response = secretService.validateSecret(secretId);
 
-        return ResponseEntity.status(response.getHttpStatus()).body(response);
+        HttpStatus status = response.getHttpStatus() != null ? response.getHttpStatus() : HttpStatus.OK;
+        return ResponseEntity.status(status).body(response);
     }
 
     @PostMapping("/update-password/{id}")
@@ -87,20 +81,44 @@ public class SecretController {
             @AuthenticationPrincipal User user
     ) {
         if (user == null) {
+            log.warn("Controller :: Unauthorized password update attempt for secret: {}", id);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         String password = body.get("password");
-        SecretResponseDTO response =  secretService.updateSecretPassword(id, password);
-        return ResponseEntity.ok(response);
+
+        if (password == null || password.isBlank()) {
+            log.warn("Controller :: Empty password provided for secret: {}", id);
+            return ResponseEntity.badRequest().body(
+                    SecretResponseDTO.builder()
+                            .isSuccess(false)
+                            .message("Password is required")
+                            .httpStatus(HttpStatus.BAD_REQUEST)
+                            .build()
+            );
+        }
+
+        log.info("Controller :: Update password request for secret: {} by user: {}", id, user.getId());
+
+        SecretResponseDTO response = secretService.updateSecretPassword(id, password, user.getId());
+
+        HttpStatus status = response.getHttpStatus() != null ? response.getHttpStatus() : HttpStatus.OK;
+        return ResponseEntity.status(status).body(response);
     }
 
-    // --- HELPER: Get Real IP (Behind Load Balancers/Cloudflare) ---
     private String getClientIp(HttpServletRequest request) {
+        // Cloudflare
+        String cfConnectingIp = request.getHeader("CF-Connecting-IP");
+        if (cfConnectingIp != null && !cfConnectingIp.isEmpty()) {
+            return cfConnectingIp;
+        }
+
+        // Other proxies/load balancers
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
             return xForwardedFor.split(",")[0].trim();
         }
+
         return request.getRemoteAddr();
     }
 }

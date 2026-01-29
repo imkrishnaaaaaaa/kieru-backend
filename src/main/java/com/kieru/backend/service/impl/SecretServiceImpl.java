@@ -181,7 +181,11 @@ public class SecretServiceImpl implements SecretService {
                         .build();
             }
             log.warn("Validate Secret :: Validation failed. Secret not found: {}", secretId);
-            return SecretMetadataResponseDTO.builder().isSuccess(false).build();
+            return SecretMetadataResponseDTO.builder()
+            .isSuccess(false)
+            .httpStatus(HttpStatus.NOT_FOUND)
+            .message("Secret not found")
+            .build();
         }
         finally {
             MDC.clear();
@@ -423,21 +427,46 @@ public SecretLogsResponseDTO getSecretLogs(String secretId, int page, int size) 
     }
 
     @Override
-    public SecretResponseDTO updateSecretPassword(String secretId, String newPassword) {
-        log.info("Update Password :: Updating password for secret ID: {}", secretId);
+    @Transactional
+    public SecretResponseDTO updateSecretPassword(String secretId, String newPassword, String ownerId) {
+        log.info("Update Password :: Updating password for secret ID: {} by owner: {}", secretId, ownerId);
 
-        String hashedPassword = securityUtil.hashPassword(newPassword);
-        SecretPayload payload = payloadRepo.findById(secretId).orElseThrow(() -> {
-            log.error("Update Password :: Secret not found: {}", secretId);
-            return new RuntimeException("Secret not found");
-        });
+        try {
+            SecretPayload payload = payloadRepo.findById(secretId).orElseThrow(() -> {
+                log.error("Update Password :: Secret not found: {}", secretId);
+                return new RuntimeException("Secret not found");
+            });
 
-        payload.setPasswordHash(hashedPassword);
-        payloadRepo.save(payload);
+            SecretMetadata metadata = payload.getMetadata();
+            if (!ownerId.equals(metadata.getOwnerId())) {
+                log.warn("Update Password :: Unauthorized attempt by user: {} for secret: {}", ownerId, secretId);
+                return SecretResponseDTO.builder()
+                        .isSuccess(false)
+                        .message("Unauthorized")
+                        .httpStatus(HttpStatus.FORBIDDEN)
+                        .build();
+            }
 
-        log.info("Update Password :: Password updated successfully for secret ID: {}", secretId);
+            String hashedPassword = securityUtil.hashPassword(newPassword);
+            payload.setPasswordHash(hashedPassword);
+            payloadRepo.save(payload);
 
-        return SecretResponseDTO.builder().id(payload.getId()).isSuccess(true).httpStatus(HttpStatus.OK).build();
+            log.info("Update Password :: Password updated successfully for secret ID: {}", secretId);
+
+            return SecretResponseDTO.builder()
+                    .id(payload.getId())
+                    .isSuccess(true)
+                    .httpStatus(HttpStatus.OK)
+                    .build();
+        }
+        catch (Exception e) {
+            log.error("Update Password :: Error updating password for secret: {}", secretId, e);
+            return SecretResponseDTO.builder()
+                    .isSuccess(false)
+                    .message("Internal server error")
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+        }
     }
 
     private void saveAccessLog(CreateAccessLog accessLog) {
