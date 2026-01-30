@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 
 @Repository
@@ -32,4 +33,10 @@ public interface AccessLogRepository extends JpaRepository<SecretAccessLog, Long
      * Delete logs for a secret (used when deleting metadata).
      */
     void deleteBySecret_Id(String secretId);
+
+    // Extract: Views
+    long countByAccessedAtBetweenAndWasSuccessfulTrue(Instant start, Instant end);
+
+    // Extract: Failed Views
+    long countByAccessedAtBetweenAndWasSuccessfulFalse(Instant start, Instant end);
 }

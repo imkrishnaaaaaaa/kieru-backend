@@ -2,6 +2,9 @@ package com.kieru.backend.repository;
 
 import com.kieru.backend.entity.DailyStatistic;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -14,11 +17,15 @@ public interface DailyStatisticRepository extends JpaRepository<DailyStatistic, 
     // Fetch range for charts
     List<DailyStatistic> findByDateBetweenOrderByDateAsc(LocalDate startDate, LocalDate endDate);
 
-    // Check if stats already exist for a date
-    Optional<DailyStatistic> findByDate(LocalDate date);
-
     /**
      * Convenience to fetch recent N days (descending).
      */
     List<DailyStatistic> findTop30ByOrderByDateDesc();
+
+    Optional<DailyStatistic> findByDate(LocalDate date);
+
+    // Cleanup Query
+    @Modifying
+    @Query("DELETE FROM DailyStatistic d WHERE d.date < :cutoff")
+    int deleteOlderThan(@Param("cutoff") LocalDate cutoff);
 }

@@ -32,4 +32,13 @@ public interface SecretMetadataRepository extends JpaRepository<SecretMetadata, 
 
     @Query("SELECT s FROM SecretMetadata s WHERE s.isActive = true AND s.expiresAt < :now")
     List<SecretMetadata> findExpiredSecrets(@Param("now") Instant now, Pageable pageable);
+
+    // Extract: Secrets Created
+    long countByCreatedAtBetween(Instant start, Instant end);
+
+    // Extract: Storage Used (Sum of encrypted payload size)
+    // Note: Joining with Payload table for byte size
+    @Query("SELECT COALESCE(SUM(LENGTH(p.encryptedContent)), 0) FROM SecretMetadata m " +
+            "JOIN m.payload p WHERE m.createdAt BETWEEN :start AND :end")
+    long sumStorageBytesBetween(@Param("start") Instant start, @Param("end") Instant end);
 }

@@ -24,4 +24,10 @@ public interface UserRepository extends JpaRepository<User, String> {
             @Param("plans") List<KieruUtil.SubscriptionPlan> plans,
             @Param("cutoff") Instant cutoff
     );
+
+    // Extract: New Users
+    long countByJoinedAtBetween(Instant start, Instant end);
+
+    // Extract: Active Users (Proxy based on last login)
+    long countByLastLoginAtBetween(Instant start, Instant end);
 }
