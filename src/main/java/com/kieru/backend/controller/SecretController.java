@@ -1,5 +1,7 @@
 package com.kieru.backend.controller;
 
+import com.kieru.backend.annotation.RateLimit;
+import com.kieru.backend.annotation.RateLimitType;
 import com.kieru.backend.dto.CreateSecretRequest;
 import com.kieru.backend.dto.SecretMetadataResponseDTO;
 import com.kieru.backend.dto.SecretResponseDTO;
@@ -26,6 +28,7 @@ public class SecretController {
     private final SecretService secretService;
 
     @PostMapping("/create")
+    @RateLimit(type = RateLimitType.USER, requests = 30, windowSeconds = 3600, lockDurationMinutes = 15)
     public ResponseEntity<SecretMetadataResponseDTO> createSecret(
             @Valid @RequestBody CreateSecretRequest request,
             @AuthenticationPrincipal User user,
@@ -34,16 +37,17 @@ public class SecretController {
         String ownerId = (user != null) ? user.getId() : null;
         String ipAddress = getClientIp(httpRequest);
 
-        log.info("Controller :: Create secret request from IP: {}, Owner: {}", ipAddress, ownerId);
+        log.info("SecretSecretController :: Controller : Controller : Create secret request from IP: {}, Owner: {}", ipAddress, ownerId);
 
         SecretMetadataResponseDTO response = secretService.createSecret(request, ownerId, ipAddress);
 
-        log.info("Controller :: Create secret response - Success: {}, SecretId: {}", response.getIsSuccess(), response.getSecretId());
+        log.info("SecretController :: Controller : Create secret response - Success: {}, SecretId: {}", response.getIsSuccess(), response.getSecretId());
 
         return ResponseEntity.status(response.getHttpStatus()).body(response);
     }
 
     @PostMapping("/{id}/access")
+    @RateLimit(type = RateLimitType.IP, requests = 50, windowSeconds = 3600, lockDurationMinutes = 10)
     public ResponseEntity<SecretResponseDTO> getSecretContent(
             @PathVariable String id,
             @RequestBody(required = false) Map<String, String> body,
@@ -54,7 +58,7 @@ public class SecretController {
         String ipAddress = getClientIp(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
 
-        log.info("Controller :: Access secret request. SecretId: {}, IP: {}", id, ipAddress);
+        log.info("SecretController :: Controller : Access secret request. SecretId: {}, IP: {}", id, ipAddress);
 
         SecretResponseDTO response = secretService.getSecretContent(id, password, accessingTime, ipAddress, userAgent);
 
@@ -63,10 +67,11 @@ public class SecretController {
     }
 
     @GetMapping("/validation")
+    @RateLimit(type = RateLimitType.USER, requests = 75, windowSeconds = 3600, lockDurationMinutes = 10)
     public ResponseEntity<SecretMetadataResponseDTO> validateSecret(
             @RequestParam(name = "id") String secretId
     ) {
-        log.info("Controller :: Validate secret request. SecretId: {}", secretId);
+        log.info("SecretController :: Controller : Validate secret request. SecretId: {}", secretId);
 
         SecretMetadataResponseDTO response = secretService.validateSecret(secretId);
 
@@ -75,20 +80,21 @@ public class SecretController {
     }
 
     @PostMapping("/update-password/{id}")
+    @RateLimit(type = RateLimitType.USER, requests = 5, windowSeconds = 600, lockDurationMinutes = 5)
     public ResponseEntity<SecretResponseDTO> updateSecretPassword(
             @PathVariable String id,
             @RequestBody Map<String, String> body,
             @AuthenticationPrincipal User user
     ) {
         if (user == null) {
-            log.warn("Controller :: Unauthorized password update attempt for secret: {}", id);
+            log.warn("SecretController :: Controller : Unauthorized password update attempt for secret: {}", id);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         String password = body.get("password");
 
         if (password == null || password.isBlank()) {
-            log.warn("Controller :: Empty password provided for secret: {}", id);
+            log.warn("SecretController :: Controller : Empty password provided for secret: {}", id);
             return ResponseEntity.badRequest().body(
                     SecretResponseDTO.builder()
                             .isSuccess(false)
@@ -98,7 +104,7 @@ public class SecretController {
             );
         }
 
-        log.info("Controller :: Update password request for secret: {} by user: {}", id, user.getId());
+        log.info("SecretController :: Controller : Update password request for secret: {} by user: {}", id, user.getId());
 
         SecretResponseDTO response = secretService.updateSecretPassword(id, password, user.getId());
 

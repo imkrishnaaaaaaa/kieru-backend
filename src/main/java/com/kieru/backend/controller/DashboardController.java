@@ -1,5 +1,7 @@
 package com.kieru.backend.controller;
 
+import com.kieru.backend.annotation.RateLimit;
+import com.kieru.backend.annotation.RateLimitType;
 import com.kieru.backend.dto.SecretLogsResponseDTO;
 import com.kieru.backend.dto.SecretMetadataResponseDTO;
 import com.kieru.backend.entity.User;
@@ -29,6 +31,7 @@ public class DashboardController {
      * Usage: GET /api/dashboard/secrets?start=0&limit=10&onlyActive=true
      */
     @GetMapping("/secrets")
+    @RateLimit(type = RateLimitType.USER, requests = 30, windowSeconds = 300, lockDurationMinutes = 5)
     public ResponseEntity<List<SecretMetadataResponseDTO>> getMySecrets(
             @AuthenticationPrincipal User user,
             @RequestParam(name = "page", defaultValue = "0") int pageNumber,
@@ -57,6 +60,7 @@ public class DashboardController {
      * Usage: GET /api/dashboard/secrets/{id}/50/logs
      */
     @GetMapping("/secrets/{id}/{limit}/logs")
+    @RateLimit(type = RateLimitType.USER, requests = 15, windowSeconds = 300, lockDurationMinutes = 5)
     public ResponseEntity<SecretLogsResponseDTO> getSecretLogs(
             @PathVariable("id") String secretId,
             @RequestParam(name = "limit", defaultValue = "10") int limit,
@@ -79,6 +83,7 @@ public class DashboardController {
      * Allows the owner to delete the secret immediately.
      */
     @DeleteMapping("/secrets/delete/{id}")
+    @RateLimit(type = RateLimitType.USER, requests = 15, windowSeconds = 300, lockDurationMinutes = 5)
     public ResponseEntity<String> deleteSecret(
             @PathVariable String id,
             @AuthenticationPrincipal User user

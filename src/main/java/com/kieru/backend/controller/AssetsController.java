@@ -1,5 +1,7 @@
 package com.kieru.backend.controller;
 
+import com.kieru.backend.annotation.RateLimit;
+import com.kieru.backend.annotation.RateLimitType;
 import com.kieru.backend.service.AssetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
@@ -24,6 +26,7 @@ public class AssetsController {
      * Cache: 1 Day (These rarely change)
      */
     @GetMapping("/subscriptions")
+    @RateLimit(type = RateLimitType.IP, requests = 30, windowSeconds = 300, lockDurationMinutes = 5)
     public ResponseEntity<Map<String, String>> getSubscriptions() {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(24, TimeUnit.HOURS))
@@ -36,6 +39,7 @@ public class AssetsController {
      * Cache: 1 Day
      */
     @GetMapping("/subscriptions/char-limits")
+    @RateLimit(type = RateLimitType.IP, requests = 30, windowSeconds = 300, lockDurationMinutes = 5) // 30/5mins
     public ResponseEntity<Map<String, Integer>> getSubscriptionCharLimits() {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(24, TimeUnit.HOURS))
@@ -48,6 +52,7 @@ public class AssetsController {
      * Cache: 1 Day
      */
     @GetMapping("/subscriptions/file-size-limits")
+    @RateLimit(type = RateLimitType.IP, requests = 30, windowSeconds = 300, lockDurationMinutes = 5) // 30/5mins
     public ResponseEntity<Map<String, Long>> getSubscriptionFileLimits() {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(24, TimeUnit.HOURS))
@@ -60,6 +65,7 @@ public class AssetsController {
      * Cache: 1 Day
      */
     @GetMapping("/subscriptions/daily-secret-limits")
+    @RateLimit(type = RateLimitType.IP, requests = 30, windowSeconds = 300, lockDurationMinutes = 5) // 30/5mins
     public ResponseEntity<Map<String, Integer>> getSubscriptionDailyLimits() {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(24, TimeUnit.HOURS))
