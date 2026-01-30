@@ -1,5 +1,8 @@
+//package com.kieru.kieru_backend;
+//
 //import com.kieru.backend.controller.SecretController;
 //import com.kieru.backend.exception.RateLimitExceededException;
+//import org.junit.jupiter.api.Assertions;
 //import org.junit.jupiter.api.Test;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.boot.test.context.SpringBootTest;
@@ -17,12 +20,13 @@
 //        // Make 11 requests (limit is 10)
 //        for (int i = 0; i < 11; i++) {
 //            try {
-//                controller.createSecret(...);
-//            } catch (RateLimitExceededException e) {
+////                controller.createSecret(...);
+//            }
+//            catch (RateLimitExceededException e) {
 //                assertEquals(11, i + 1); // Should fail on 11th request
 //                return;
 //            }
 //        }
-//        fail("Rate limit was not enforced");
+//        Assertions.fail("Rate limit was not enforced");
 //    }
 //}
