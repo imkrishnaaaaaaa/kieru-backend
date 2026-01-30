@@ -1,6 +1,5 @@
 package com.kieru.backend.service.impl;
 
-import com.google.firestore.v1.TransactionOptions;
 import com.kieru.backend.dto.*;
 import com.kieru.backend.entity.SecretAccessLog;
 import com.kieru.backend.entity.SecretMetadata;
@@ -334,7 +333,7 @@ public class SecretServiceImpl implements SecretService {
             CompletableFuture.runAsync(() -> saveAccessLog(accessLog));
 
             long timeTaken = System.currentTimeMillis() - accessedAt.toEpochMilli();
-            MDC.put("timeTaken", String.valueOf(timeTaken));
+            MDC.put("duration_ms", String.valueOf(timeTaken));
             log.info("Get Secret :: Successfully accessed secret. Secret Id: {}, Views Left: {}, Time Taken: {}ms", id, finalViews, timeTaken);
 
             return SecretResponseDTO.builder()

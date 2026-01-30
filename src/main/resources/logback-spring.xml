@@ -1,40 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-
-    <!-- 1. BRIDGE: Tell Logback to read from application.properties -->
-    <!-- 'source' matches the key in application.properties -->
-    <!-- 'name' is a local variable we create for Logback to use -->
-    <springProperty scope="context" name="tokenFromSpring" source="LOGTAIL_SOURCE_TOKEN"/>
-
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <!-- Console Appender -->
+    <!-- 1. CONSOLE APPENDER (Visual for Humans) -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <!-- Pattern: Date Time [Thread] Level Logger - Message -->
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- 2. LOGTAIL APPENDER (For Cloud - Auto JSON) -->
-    <!-- This class automatically formats as JSON for Better Stack -->
-    <appender name="LOGTAIL" class="com.logtail.logback.LogtailAppender">
-        <appName>kieru-backend</appName>
+    <!-- 2. CLOUD APPENDER (Better Stack - JSON) -->
+    <!-- Wrapped in 'springProfile' so it ONLY loads in Prod profile -->
+    <springProfile name="prod">
+        <springProperty scope="context" name="logtailToken" source="LOGTAIL_SOURCE_TOKEN"/>
 
-        <!-- 2. USE THE LOCAL VARIABLE WE DEFINED ABOVE -->
-        <sourceToken>${tokenFromSpring}</sourceToken>
-                <!-- Capture these extra fields if present in MDC -->
-        <mdcFields>userId,requestId</mdcFields>
-    </appender>
+        <appender name="LOGTAIL" class="com.logtail.logback.LogtailAppender">
+            <appName>kieru-backend</appName>
+            <sourceToken>${logtailToken}</sourceToken>
+            <mdcFields>userId,clientIp,userAgent,ipAddress,job,secretId,duration_ms</mdcFields>
+            <mdcTypes>string,string,string,string,string,string,int</mdcTypes>
+        </appender>
+    </springProfile>
 
-    <!-- 3. THE MASTER SWITCH -->
-    <root level="INFO">
-        <!-- Always log to Console -->
-        <appender-ref ref="CONSOLE"/>
+    <!-- 3. ROOT LOGGERS -->
 
-        <!-- Only log to Cloud if we have a token (e.g. in Prod) -->
-        <!-- You can remove this 'if' check if you always want cloud logs -->
-        <appender-ref ref="LOGTAIL"/>
-    </root>
+    <!-- DEV Profile: Console Only (Safe for Work Laptop) -->
+    <springProfile name="dev,default">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="com.kieru.backend" level="DEBUG"/>
+    </springProfile>
+
+    <!-- PROD Profile: Console + Cloud -->
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="LOGTAIL"/>
+        </root>
+    </springProfile>
 
 </configuration>
