@@ -11,6 +11,6 @@ public @interface RateLimit {
     RateLimitType type() default RateLimitType.USER;
     int requests() default 100;
     int windowSeconds() default 60;
-    String lockDurationMinutes() default "5"; // Can be SpEL expression
+    int lockDurationMinutes() default 5; // Can be SpEL expression
 }
 

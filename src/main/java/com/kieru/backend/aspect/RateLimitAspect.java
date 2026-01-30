@@ -43,7 +43,7 @@ public class RateLimitAspect {
 
         if(!allowed){
             // Lock the user for X minutes
-            int lockDuration = Integer.parseInt(rateLimit.lockDurationMinutes());
+            int lockDuration = rateLimit.lockDurationMinutes();
             rateLimitService.lock(identifier, lockDuration);
 
             log.warn("Rate limit exceeded - locking user: {} for {} minutes", identifier, lockDuration);
