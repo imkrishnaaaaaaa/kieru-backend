@@ -19,14 +19,9 @@ public class KieruUtil {
         this.config = config;
     }
 
-    @Value("${app.default.date_format:yyyy-MM-dd}")
-    private static String defaultDateFormat;
-
-    @Value("${app.default.time_format:HH:mm:ss}")
-    private static String defaultTimeFormat;
-
-    @Value("${app.default.time_zone:UTC}")
-    private static String defaultTimeZone;
+    private static final String defaultDateFormat = "dd-MM-yyyy HH:mm:ss";
+    private static final String defaultTimeFormat = "HH:mm:ss";
+    private static final String defaultTimeZone = "UTC 05:30+";
 
     @Getter
     public enum SubscriptionPlan {
@@ -118,7 +113,7 @@ public class KieruUtil {
         if (plan == null) return config.getAnonymous().getCreateLimitDaily();
 
         return switch (plan) {
-            case ANONYMOUS -> config.getAnonymous().getCharLimit(); // Fixed to use Anonymous config
+            case ANONYMOUS -> config.getAnonymous().getCharLimit();
             case EXPLORER -> config.getExplorer().getCharLimit();
             case CHALLENGER -> config.getChallenger().getCharLimit();
             case DOMINATOR -> config.getDominator().getCharLimit();
@@ -130,7 +125,7 @@ public class KieruUtil {
         if (plan == null) return config.getAnonymous().getFileSizeLimit();
 
         return switch (plan) {
-            case ANONYMOUS -> config.getAnonymous().getFileSizeLimit(); // Fixed to use Anonymous config
+            case ANONYMOUS -> config.getAnonymous().getFileSizeLimit();
             case EXPLORER -> config.getExplorer().getFileSizeLimit();
             case CHALLENGER -> config.getChallenger().getFileSizeLimit();
             case DOMINATOR -> config.getDominator().getFileSizeLimit();
@@ -224,9 +219,7 @@ public class KieruUtil {
         if (minutes > 0) {
             sb.append(minutes % 60).append(" minutes ");
         }
-        if (seconds > 0 || sb.length() == 0) {
-            sb.append(seconds % 60).append(" seconds");
-        }
+        sb.append(seconds % 60).append(" seconds");
 
         return sb.toString().trim();
     }

@@ -4,18 +4,21 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 public class FirebaseConfig {
 
-    // This tells Spring: "When someone asks for FirebaseAuth,
-    // get the FirebaseApp bean we just made and extract the Auth tool."
+    @Value("${FIREBASE_CREDENTIALS}")
+    private String firebaseCredentialsJson;
+
     @Bean
     public FirebaseAuth firebaseAuth(FirebaseApp firebaseApp) {
         return FirebaseAuth.getInstance(firebaseApp);
@@ -23,14 +26,11 @@ public class FirebaseConfig {
 
     @Bean
     public FirebaseApp firebaseApp() throws IOException {
-        // Prevent re-initialization error if bean is refreshed
         if (!FirebaseApp.getApps().isEmpty()) {
             return FirebaseApp.getInstance();
         }
 
-        // Load the JSON key
-        ClassPathResource resource = new ClassPathResource("service-account.json");
-        InputStream serviceAccount = resource.getInputStream();
+        InputStream serviceAccount = new ByteArrayInputStream(firebaseCredentialsJson.getBytes(StandardCharsets.UTF_8));
 
         FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))
@@ -38,5 +38,4 @@ public class FirebaseConfig {
 
         return FirebaseApp.initializeApp(options);
     }
-
 }

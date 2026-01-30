@@ -9,22 +9,23 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AssetServiceImpl implements AssetService {
 
     private final KieruUtil kieruUtil;
 
     @Override
     public Map<String, String> getSubscriptionNames() {
-        // Converts Enum: ANONYMOUS -> "anonymous"
         return Arrays.stream(KieruUtil.SubscriptionPlan.values())
                 .collect(Collectors.toMap(Enum::name, KieruUtil.SubscriptionPlan::getName));
     }
 
     @Override
     public Map<String, Integer> getCharLimits() {
-        // Dynamically fetch limits from KieruUtil (which reads from Config/Properties)
         return Arrays.stream(KieruUtil.SubscriptionPlan.values())
                 .collect(Collectors.toMap(
                         KieruUtil.SubscriptionPlan::getName,
@@ -34,8 +35,6 @@ public class AssetServiceImpl implements AssetService {
 
     @Override
     public Map<String, Long> getFileSizeLimits() {
-        // Dynamically fetch limits from KieruUtil
-        // Note: KieruUtil returns int, casting to Long for the interface contract
         return Arrays.stream(KieruUtil.SubscriptionPlan.values())
                 .collect(Collectors.toMap(
                         KieruUtil.SubscriptionPlan::getName,

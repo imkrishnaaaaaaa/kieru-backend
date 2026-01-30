@@ -10,6 +10,7 @@ import com.kieru.backend.repository.UserRepository;
 import com.kieru.backend.service.AuthService;
 import com.kieru.backend.util.KieruUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,26 +20,18 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final FirebaseAuth firebaseAuth;
     private final UserRepository userRepository;
 
-    /**
-     * LOGIN / SIGNUP (Unified)
-     * - Verifies Firebase token
-     * - Syncs user into backend DB
-     * - Enforces bans
-     * - Rotates session version
-     */
     @Override
     @Transactional
     public AuthResponse login(LoginRequest request, String ip) {
+        log.info("Auth Service :: Login attempt from IP: {}", ip);
 
         try {
-            /* ------------------------------------------------------------------
-             * 1. VERIFY FIREBASE TOKEN (Identity Proof)
-             * ------------------------------------------------------------------ */
             FirebaseToken decodedToken = firebaseAuth.verifyIdToken(request.getFirebaseToken());
 
             String uid = decodedToken.getUid();
@@ -46,9 +39,13 @@ public class AuthServiceImpl implements AuthService {
             String name = decodedToken.getName() != null ? decodedToken.getName() : "User";
             String picture = decodedToken.getPicture();
 
-            /* ------------------------------------------------------------------
-             * 2. DETERMINE LOGIN PROVIDER
-             * ------------------------------------------------------------------ */
+            log.debug("Auth Service :: Firebase token verified for UID: {}, Email: {}", uid, email);
+
+//            if (email == null || email.isBlank()) {
+//                log.error("Login failed: Email is null for UID: {}", uid);
+//                throw new RuntimeException("Email is required");
+//            }
+
             KieruUtil.LoginProvider provider = KieruUtil.LoginProvider.UNKNOWN;
             Map<String, Object> claims = decodedToken.getClaims();
             Object firebaseClaim = claims.get("firebase");
@@ -61,55 +58,44 @@ public class AuthServiceImpl implements AuthService {
                 }
             }
 
-            /* ------------------------------------------------------------------
-             * 3. LOAD OR CREATE USER (Mirror Pattern)
-             * ------------------------------------------------------------------ */
-            User user = userRepository.findById(uid).orElseGet(() ->
-                    User.builder()
-                            .id(uid)                       // Firebase UID
-                            .email(email)
-                            .displayName(name)
-                            .photoUrl(picture)
-                            .role(KieruUtil.UserRole.USER) // Default role
-                            .subscription(KieruUtil.SubscriptionPlan.EXPLORER)
-                            .isBanned(false)
-                            .secretsCreatedCount(0)
-                            .joinedAt(Instant.now())
-                            .build()
-            );
+            boolean isNewUser = false;
+            User user = userRepository.findById(uid).orElseGet(() -> {
+                log.info("Auth Service :: Creating new user for UID: {}", uid);
+                return User.builder()
+                        .id(uid)
+                        .email(email)
+                        .displayName(name)
+                        .photoUrl(picture)
+                        .role(KieruUtil.UserRole.USER)
+                        .subscription(KieruUtil.SubscriptionPlan.EXPLORER)
+                        .isBanned(false)
+                        .secretsCreatedCount(0)
+                        .joinedAt(Instant.now())
+                        .build();
+            });
 
-            /* ------------------------------------------------------------------
-             * 4. ENFORCE BUSINESS RULES
-             * ------------------------------------------------------------------ */
             if (user.isBanned()) {
-                throw new RuntimeException("User account is banned");
+                log.warn("Auth Service :: Login blocked: User is banned. UID: {}", uid);
+                throw new RuntimeException("Auth Service :: User account is banned");
             }
 
-            // (Future-safe) Role sanity check
             if (user.getRole() == null) {
                 user.setRole(KieruUtil.UserRole.USER);
             }
 
-            /* ------------------------------------------------------------------
-             * 5. SYNC MUTABLE PROFILE DATA
-             * ------------------------------------------------------------------ */
             user.setDisplayName(name);
             user.setPhotoUrl(picture);
             user.setLastLoginAt(Instant.now());
             user.setLastLoginIp(ip);
             user.setLoginProvider(provider);
 
-            /* ------------------------------------------------------------------
-             * 6. ROTATE SESSION VERSION (Single Active Session Rule)
-             * ------------------------------------------------------------------ */
             String newSessionVersion = UUID.randomUUID().toString();
             user.setSessionVersion(newSessionVersion);
 
             userRepository.save(user);
 
-            /* ------------------------------------------------------------------
-             * 7. BUILD RESPONSE
-             * ------------------------------------------------------------------ */
+            log.info("Auth Service :: Login successful for UID: {}, Provider: {}, NewUser: {}", uid, provider, isNewUser);
+
             return AuthResponse.builder()
                     .userId(user.getId())
                     .email(user.getEmail())
@@ -123,23 +109,24 @@ public class AuthServiceImpl implements AuthService {
 
         }
         catch (FirebaseAuthException e) {
-            throw new RuntimeException("Invalid Firebase token", e);
+            log.error("Auth Service :: Firebase token verification failed from IP: {}", ip, e);
+            throw new RuntimeException("Auth Service :: Invalid Firebase token", e);
         }
     }
 
-    /**
-     * LOGOUT
-     * - Invalidates current session
-     */
     @Override
-    @Transactional
     public void logout(String userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> {
+                    log.error("Auth Service :: Logout failed: User not found: {}", userId);
+                    return new RuntimeException("Auth Service :: User not found");
+                });
 
-        // Kill the session by clearing or rotating the version
-        user.setSessionVersion(null);
+        String newSessionVersion = UUID.randomUUID().toString();
+        user.setSessionVersion(newSessionVersion);
         userRepository.save(user);
+
+        log.info("Auth Service :: Logout successful for user: {}", userId);
     }
 }
