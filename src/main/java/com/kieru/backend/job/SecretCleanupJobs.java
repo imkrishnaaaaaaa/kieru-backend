@@ -5,6 +5,7 @@ import com.kieru.backend.repository.SecretMetadataRepository;
 import com.kieru.backend.util.KieruUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -33,40 +34,54 @@ public class SecretCleanupJobs {
      *
      */
 
-    @Scheduled(cron = "0 */5 * * * *")
+    @Scheduled(cron = "0 0 */6 * * *") // Every 6 hours
     @Transactional
     public void expireSecretsBatch() {
+        MDC.put("job", "ExpireSecrets");
         long startTime = System.currentTimeMillis();
-        log.info("Job Started: Scanning for expired secrets...");
+        log.info("ExpireSecretsJob :: Job Started: Scanning for expired secrets...");
 
-        Pageable limit = PageRequest.of(0, 100);
-        Instant now = Instant.now();
+        int totalProcessed = 0;
+        int batchSize = 100;
+        List<SecretMetadata> expiredSecrets;
 
-        List<SecretMetadata> expiredSecrets = metaRepo.findExpiredSecrets(now, limit);
+        do {
+            Pageable limit = PageRequest.of(0, batchSize);
+            Instant now = Instant.now();
 
-        if (expiredSecrets.isEmpty()) {
-            // Logs current date correctly now
-            log.info("Expire Secrets Job :: Finished. No expired secrets found. Date: {}",
-                    KieruUtil.millisToDateString(System.currentTimeMillis()));
-            return;
-        }
+            expiredSecrets = metaRepo.findExpiredSecrets(now, limit);
 
-        if (expiredSecrets.size() >= 100) {
-            log.warn("Expire Secrets Job :: Batch limit (100) reached. More secrets may remain.");
-        }
+            if (expiredSecrets.isEmpty()) {
+                break;
+            }
 
-        for (SecretMetadata secret : expiredSecrets) {
-            secret.setActive(false);
-            log.debug("Marking secret {} as expired.", secret.getId());
-        }
+            for (SecretMetadata secret : expiredSecrets) {
+                secret.setActive(false);
+                log.debug("ExpireSecretsJob :: Marking secret {} as expired.", secret.getId());
+            }
 
-        metaRepo.saveAll(expiredSecrets);
+            metaRepo.saveAll(expiredSecrets);
+
+            totalProcessed += expiredSecrets.size();
+
+            if (totalProcessed > 10000) {
+                log.warn("ExpireSecretsJob :: Job Safety Stop: Processed 10,000 secrets. Will continue next run.");
+                break;
+            }
+
+        } while (expiredSecrets.size() >= batchSize); // Continue if we filled the batch
 
         long duration = System.currentTimeMillis() - startTime;
-        log.info("Expire Secrets Job :: Finished. Expired {} secrets in {} at ",
-                expiredSecrets.size(),
-                KieruUtil.millisToRelativeTime(duration),
-                KieruUtil.millisToDateString(System.currentTimeMillis())
-        );
+
+        if (totalProcessed > 0) {
+            log.info("ExpireSecretsJob :: Expire Secrets Job :: Finished. Expired {} secrets in {} on {}.",
+                    totalProcessed,
+                    KieruUtil.millisToRelativeTime(duration),
+                    KieruUtil.millisToDateString(System.currentTimeMillis())
+            );
+        }
+        else {
+            log.info("ExpireSecretsJob :: Finished. No expired secrets found.");
+        }
     }
 }
