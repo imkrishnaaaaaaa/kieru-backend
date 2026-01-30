@@ -5,6 +5,7 @@ import com.kieru.backend.dto.SecretMetadataResponseDTO;
 import com.kieru.backend.entity.User;
 import com.kieru.backend.service.SecretService; // Updated package name to match standard singular 'service'
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
+@Slf4j
 public class DashboardController {
 
     private final SecretService secretService;
@@ -37,12 +39,14 @@ public class DashboardController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
+        log.info("DashboardController :: Controller : Getting ({}) created secrets", limit);
         List<SecretMetadataResponseDTO> secretsList = secretService.getMySecretsMeta(
                 user.getId(),
                 pageNumber,
                 limit,
                 onlyActive
         );
+        log.info("DashboardController :: Controller : got ({}) created secrets", secretsList.size());
 
         return ResponseEntity.ok(secretsList);
     }
@@ -62,13 +66,10 @@ public class DashboardController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // Create Pageable object from limit
         Pageable pageable = PageRequest.ofSize(limit);
-
-        // Call service (Aligned with your Interface definition)
-        // Note: The Service should internally verify if 'user' owns 'secretId'
-        // since we aren't passing the user ID here based on your interface.
+        log.info("DashboardController :: Controller : Getting latest ({}) logs of secret: {}", limit, secretId);
         SecretLogsResponseDTO logs = secretService.getSecretLogs(secretId, pageable);
+        log.info("DashboardController :: Controller : Got ({}) logs of secret{}", logs.getLogs().size(), secretId);
 
         return ResponseEntity.ok(logs);
     }
@@ -86,7 +87,7 @@ public class DashboardController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // Aligned with your Interface definition
+        log.info("DashboardController :: Controller : Attempt to delete the secret: {}", id);
         secretService.deleteSecret(id);
 
         return ResponseEntity.ok("Secret deleted successfully");

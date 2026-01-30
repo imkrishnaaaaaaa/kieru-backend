@@ -56,6 +56,10 @@ public class DailyStatistic {
     @Column(name = "secrets_viewed", nullable = false)
     private long secretsViewed = 0L; // total views (long for scale)
 
+    @Min(0)
+    @Column(name = "secrets_failed_views", nullable = false)
+    private long secretsFailedViews = 0L; // total views (long for scale)
+
     // --- SUBSCRIPTION METRICS ---
     @Min(0)
     @Column(name = "new_subscriptions", nullable = false)
