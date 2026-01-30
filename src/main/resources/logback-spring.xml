@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <!-- 1. CONSOLE APPENDER (For You - Simple Text) -->
+    <!-- 1. BRIDGE: Tell Logback to read from application.properties -->
+    <!-- 'source' matches the key in application.properties -->
+    <!-- 'name' is a local variable we create for Logback to use -->
+    <springProperty scope="context" name="tokenFromSpring" source="LOGTAIL_SOURCE_TOKEN"/>
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- Console Appender -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <!-- Pattern: Date Time [Thread] Level Logger - Message -->
@@ -13,8 +20,10 @@
     <!-- This class automatically formats as JSON for Better Stack -->
     <appender name="LOGTAIL" class="com.logtail.logback.LogtailAppender">
         <appName>kieru-backend</appName>
-        <sourceToken>${LOGTAIL_SOURCE_TOKEN}</sourceToken>
-        <!-- Capture these extra fields if present in MDC -->
+
+        <!-- 2. USE THE LOCAL VARIABLE WE DEFINED ABOVE -->
+        <sourceToken>${tokenFromSpring}</sourceToken>
+                <!-- Capture these extra fields if present in MDC -->
         <mdcFields>userId,requestId</mdcFields>
     </appender>
 
