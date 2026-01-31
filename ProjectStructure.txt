@@ -1,0 +1,87 @@
+.
+├── Dockerfile
+├── envProd
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+├── ProjectStructure.txt
+└── src
+    ├── main
+    │   ├── java
+    │   │   └── com
+    │   │       └── kieru
+    │   │           └── backend
+    │   │               ├── annotation
+    │   │               │   ├── RateLimit.java
+    │   │               │   └── RateLimitType.java
+    │   │               ├── aspect
+    │   │               │   └── RateLimitAspect.java
+    │   │               ├── config
+    │   │               │   ├── AsyncConfig.java
+    │   │               │   ├── FirebaseConfig.java
+    │   │               │   └── SecurityConfig.java
+    │   │               ├── controller
+    │   │               │   ├── AssetsController.java
+    │   │               │   ├── AuthController.java
+    │   │               │   ├── DashboardController.java
+    │   │               │   └── SecretController.java
+    │   │               ├── dto
+    │   │               │   ├── AuthResponse.java
+    │   │               │   ├── CreateAccessLog.java
+    │   │               │   ├── CreateSecretRequest.java
+    │   │               │   ├── ErrorResponse.java
+    │   │               │   ├── LoginRequest.java
+    │   │               │   ├── SecretLogsResponseDTO.java
+    │   │               │   ├── SecretMetadataResponseDTO.java
+    │   │               │   └── SecretResponseDTO.java
+    │   │               ├── entity
+    │   │               │   ├── DailyStatistic.java
+    │   │               │   ├── SecretAccessLog.java
+    │   │               │   ├── SecretMetadata.java
+    │   │               │   ├── SecretPayload.java
+    │   │               │   └── User.java
+    │   │               ├── exception
+    │   │               │   ├── GlobalExceptionHandler.java
+    │   │               │   └── RateLimitExceededException.java
+    │   │               ├── filter
+    │   │               │   └── FirebaseAuthFilter.java
+    │   │               ├── job
+    │   │               │   ├── DailyAnalyticsJob.java
+    │   │               │   ├── SecretCleanupJobs.java
+    │   │               │   ├── SystemMaintenanceJob.java
+    │   │               │   └── UserCleanupJob.java
+    │   │               ├── KieruBackendApplication.java
+    │   │               ├── repository
+    │   │               │   ├── AccessLogRepository.java
+    │   │               │   ├── DailyStatisticRepository.java
+    │   │               │   ├── SecretMetadataRepository.java
+    │   │               │   ├── SecretPayloadRepository.java
+    │   │               │   └── UserRepository.java
+    │   │               ├── service
+    │   │               │   ├── AssetService.java
+    │   │               │   ├── AuthService.java
+    │   │               │   ├── impl
+    │   │               │   │   ├── AssetServiceImpl.java
+    │   │               │   │   ├── AuthServiceImpl.java
+    │   │               │   │   ├── RateLimitServiceImpl.java
+    │   │               │   │   └── SecretServiceImpl.java
+    │   │               │   ├── RateLimitService.java
+    │   │               │   └── SecretService.java
+    │   │               └── util
+    │   │                   ├── KieruUtil.java
+    │   │                   ├── RedisKeyUtil.java
+    │   │                   ├── SecurityUtil.java
+    │   │                   └── SubscriptionRateLimitConfig.java
+    │   └── resources
+    │       ├── application.properties
+    │       ├── logback-spring.xml
+    │       ├── service-account.json
+    │       ├── static
+    │       └── templates
+    └── test
+        └── java
+            └── com
+                └── kieru
+                    └── kieru_backend
+                        ├── KieruBackendApplicationTests.java
+                        └── ratelimittest.java
