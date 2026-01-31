@@ -11,6 +11,7 @@ import com.kieru.backend.service.AuthService;
 import com.kieru.backend.util.KieruUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse login(LoginRequest request, String ip) {
         log.info("Auth Service :: Login attempt from IP: {}", ip);
+        long startTime = System.currentTimeMillis();
 
         try {
             FirebaseToken decodedToken = firebaseAuth.verifyIdToken(request.getFirebaseToken());
@@ -94,7 +96,9 @@ public class AuthServiceImpl implements AuthService {
 
             userRepository.save(user);
 
-            log.info("Auth Service :: Login successful for UID: {}, Provider: {}, NewUser: {}", uid, provider, isNewUser);
+            long duration = System.currentTimeMillis() - startTime;
+            MDC.put("duration_ms", String.valueOf(duration));
+            log.info("Auth Service :: Login successful for UID: {}, Provider: {}, NewUser: {}, Time taken: {}", uid, provider, isNewUser, KieruUtil.millisToRelativeTime(duration));
 
             return AuthResponse.builder()
                     .userId(user.getId())
@@ -116,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout(String userId) {
-
+        long startTime = System.currentTimeMillis();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> {
                     log.error("Auth Service :: Logout failed: User not found: {}", userId);
@@ -127,6 +131,8 @@ public class AuthServiceImpl implements AuthService {
         user.setSessionVersion(newSessionVersion);
         userRepository.save(user);
 
-        log.info("Auth Service :: Logout successful for user: {}", userId);
+        long duration = System.currentTimeMillis() - startTime;
+        MDC.put("duration_ms", String.valueOf(duration));
+        log.info("Auth Service :: Logout successful for user: {}, Time taken: {}", userId, KieruUtil.millisToRelativeTime(duration));
     }
 }

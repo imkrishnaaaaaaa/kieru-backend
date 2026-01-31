@@ -27,6 +27,7 @@ public class UserCleanupJob {
     @Scheduled(cron = "0 30 1 * * *")
     @Transactional
     public void removeInactiveUsers() {
+        long startTime = System.currentTimeMillis();
         MDC.put("job", "UserCleanup");
         log.info("RemoveInactiveUsersJob :: Starting cleanup of inactive registered users (180 days)...");
 
@@ -39,6 +40,8 @@ public class UserCleanupJob {
 
             int deletedCount = userRepo.deleteInactiveUsers(targetPlans, cutoff);
 
+            long duration = System.currentTimeMillis() - startTime;
+            MDC.put("duration_ms", String.valueOf(duration));
             if (deletedCount > 0) {
                 log.warn("RemoveInactiveUsersJob :: Cleanup Complete: Removed {} inactive users (older than {}).", deletedCount, cutoff);
             }
@@ -58,17 +61,20 @@ public class UserCleanupJob {
     @Scheduled(cron = "0 35 1 * * *")
     @Transactional
     public void removeAnonymousUsers() {
+        long startTime = System.currentTimeMillis();
         MDC.put("job", "AnonCleanup");
         log.info("RemoveAnonymousUsersJob :: Starting cleanup of anonymous sessions (30 days)...");
 
         try {
             Instant cutoff = Instant.now().minus(30, ChronoUnit.DAYS);
-            // Strictly target ANONYMOUS only
+
             List<KieruUtil.SubscriptionPlan> targetPlans = List.of(KieruUtil.SubscriptionPlan.ANONYMOUS);
 
             int deletedCount = userRepo.deleteInactiveUsers(targetPlans, cutoff);
 
             if (deletedCount > 0) {
+                long duration = System.currentTimeMillis() - startTime;
+                MDC.put("duration_ms", String.valueOf(duration));
                 log.warn("RemoveAnonymousUsersJob :: Cleanup Complete: Purged {} anonymous sessions.", deletedCount);
             }
             else {

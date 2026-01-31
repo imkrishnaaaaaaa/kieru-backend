@@ -109,6 +109,8 @@ public class DailyAnalyticsJob {
             int deletedCount = statsRepo.deleteOlderThan(cutoffDate);
 
             if (deletedCount > 0) {
+                long duration = System.currentTimeMillis() - startTime;
+                MDC.put("duration_ms", String.valueOf(duration));
                 log.warn("CleanupOldStatsJob :: Cleanup Complete: Deleted {} old statistic records (older than {}).", deletedCount, cutoffDate);
             }
             else {

@@ -71,9 +71,10 @@ public class SecretCleanupJobs {
 
         } while (expiredSecrets.size() >= batchSize); // Continue if we filled the batch
 
-        long duration = System.currentTimeMillis() - startTime;
 
         if (totalProcessed > 0) {
+            long duration = System.currentTimeMillis() - startTime;
+            MDC.put("duration_ms", String.valueOf(duration));
             log.info("ExpireSecretsJob :: Expire Secrets Job :: Finished. Expired {} secrets in {} on {}.",
                     totalProcessed,
                     KieruUtil.millisToRelativeTime(duration),

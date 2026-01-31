@@ -52,6 +52,8 @@ public class SecretServiceImpl implements SecretService {
         MDC.put("userId", ownerId == null || ownerId.isBlank()  ? "anonymous" : ownerId);
         MDC.put("clientIp", ipAddress);
 
+        long startTime = System.currentTimeMillis();
+
         try {
             String userPlan;
             String redisOwnerSubscriptionKey = RedisKeyUtil.buildKey(RedisKeyUtil.KeyType.SUBSCRIPTION_PLAN, ownerId != null ? ownerId : "anon");
@@ -142,7 +144,10 @@ public class SecretServiceImpl implements SecretService {
                 log.warn("Create Secret :: TTL is negative or zero: {} seconds, skipping Redis cache", ttlSeconds);
             }
 
-            log.info("Create Secret :: Secret created successfully. ID: {}, PasswordProtected: {}, MaxViews: {}", id, isPasswordProtected, maxViews);
+            long duration = System.currentTimeMillis() - startTime;
+            MDC.put("duration_ms", String.valueOf(duration));
+
+            log.info("Create Secret :: Secret created successfully. ID: {}, PasswordProtected: {}, MaxViews: {}, Time Taken: {}", id, isPasswordProtected, maxViews, KieruUtil.millisToRelativeTime(duration));
 
             return SecretMetadataResponseDTO.builder()
                     .secretId(meta.getId())
@@ -164,11 +169,16 @@ public class SecretServiceImpl implements SecretService {
         MDC.put("secretId", secretId);
         log.debug("Validate Secret :: Validating secret ID: {}", secretId);
 
+        long startTime = System.currentTimeMillis();
+
         try {
             Optional<SecretMetadata> optionalMeta = metaRepo.findById(secretId);
             if(optionalMeta.isPresent()){
                 SecretMetadata meta = optionalMeta.get();
-                log.debug("Validate Secret :: Validation successful for secretId: {}", secretId);
+
+                long duration = System.currentTimeMillis() - startTime;
+                MDC.put("duration_ms", String.valueOf(duration));
+                log.debug("Validate Secret :: Validation successful for secretId: {}, Time taken: {}", secretId, KieruUtil.millisToRelativeTime(duration));
                 return SecretMetadataResponseDTO.builder()
                         .isSuccess(true)
                         .secretId(meta.getId())
@@ -181,10 +191,10 @@ public class SecretServiceImpl implements SecretService {
             }
             log.warn("Validate Secret :: Validation failed. Secret not found: {}", secretId);
             return SecretMetadataResponseDTO.builder()
-            .isSuccess(false)
-            .httpStatus(HttpStatus.NOT_FOUND)
-            .message("Secret not found")
-            .build();
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.NOT_FOUND)
+                    .message("Secret not found")
+                    .build();
         }
         finally {
             MDC.clear();
@@ -332,9 +342,9 @@ public class SecretServiceImpl implements SecretService {
                     .accessedAt(accessedAt).userAgent(userAgent).ipAddress(ipAddress).build();
             CompletableFuture.runAsync(() -> saveAccessLog(accessLog));
 
-            long timeTaken = System.currentTimeMillis() - accessedAt.toEpochMilli();
-            MDC.put("duration_ms", String.valueOf(timeTaken));
-            log.info("Get Secret :: Successfully accessed secret. Secret Id: {}, Views Left: {}, Time Taken: {}ms", id, finalViews, timeTaken);
+            long duration = System.currentTimeMillis() - accessedAt.toEpochMilli();
+            MDC.put("duration_ms", String.valueOf(duration));
+            log.info("Get Secret :: Successfully accessed secret. Secret Id: {}, Views Left: {}, Time Taken: {}", id, finalViews, KieruUtil.millisToRelativeTime(duration));
 
             return SecretResponseDTO.builder()
                     .isSuccess(true)
@@ -355,12 +365,16 @@ public class SecretServiceImpl implements SecretService {
     @Override
     @Transactional(readOnly = true)
     public List<SecretMetadataResponseDTO> getMySecretsMeta(String ownerId, int pageNumber, int pageSize, boolean onlyActive) {
+        long startTime = System.currentTimeMillis();
+        MDC.put("userId", ownerId);
         log.info("Get My Secrets :: Fetching secrets for owner: {}, pageNumber: {}, pageSize: {}, onlyActive: {}", ownerId, pageNumber, pageSize, onlyActive);
 
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         List<SecretMetadata> metedataList = onlyActive ? metaRepo.findByOwnerIdAndIsActive(ownerId, onlyActive, pageable) : metaRepo.findByOwnerId(ownerId, pageable);
 
-        log.debug("Get My Secrets :: Found {} secrets for owner: {}", metedataList.size(), ownerId);
+        long duration = System.currentTimeMillis() - startTime;
+        MDC.put("duration_ms", String.valueOf(duration));
+        log.debug("Get My Secrets :: Found {} secrets for owner: {}, Time taken: {}", metedataList.size(), ownerId, KieruUtil.millisToRelativeTime(duration));
 
         return metedataList.stream().map( data ->
                 SecretMetadataResponseDTO.builder().secretId(data.getId()).secretName(data.getSecretName())
@@ -375,19 +389,23 @@ public class SecretServiceImpl implements SecretService {
         return getSecretLogs(secretId, 0, 50);
     }
 
-public SecretLogsResponseDTO getSecretLogs(String secretId, int page, int size) {
-    log.debug("Get Logs :: Fetching logs for secret: {}, page: {}, size: {}", secretId, page, size);
-    Pageable pageable = PageRequest.of(page, size);
-    return getSecretLogs(secretId, pageable);
-}
+    public SecretLogsResponseDTO getSecretLogs(String secretId, int page, int size) {
+        log.debug("Get Logs :: Fetching logs for secret: {}, page: {}, size: {}", secretId, page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        return getSecretLogs(secretId, pageable);
+    }
 
     @Override
     public SecretLogsResponseDTO getSecretLogs(String secretId, Pageable pageable) {
+
+        long startTime = System.currentTimeMillis();
         log.info("Get Logs :: Fetching logs for secret: {}, page: {}, size: {}", secretId, pageable.getPageNumber(), pageable.getPageSize());
 
         List<SecretAccessLog> accessLogs = logRepo.findBySecret_IdOrderByAccessedAtDesc(secretId, pageable);
 
-        log.debug("Get Logs :: Found {} access logs for secret: {}", accessLogs.size(), secretId);
+        long duration = System.currentTimeMillis() - startTime;
+        MDC.put("duration_ms", String.valueOf(duration));
+        log.debug("Get Logs :: Found {} access logs for secret: {}, Time taken: {}", accessLogs.size(), secretId, KieruUtil.millisToRelativeTime(duration));
 
         List<SecretLogsResponseDTO.LogEntry> logsEntry = accessLogs.stream().map( log ->
                 SecretLogsResponseDTO.LogEntry.builder().ipAddress(log.getIpAddress()).deviceType(log.getDeviceType())
@@ -400,6 +418,7 @@ public SecretLogsResponseDTO getSecretLogs(String secretId, int page, int size) 
     @Override
     @Transactional
     public SecretMetadataResponseDTO deleteSecret(String secretId) {
+        long startTime = System.currentTimeMillis();
         log.info("Delete Secret :: Soft deleting secret ID: {}", secretId);
 
         SecretMetadata meta = metaRepo.findById(secretId)
@@ -415,7 +434,9 @@ public SecretLogsResponseDTO getSecretLogs(String secretId, int page, int size) 
         String redisKey = RedisKeyUtil.buildKey(RedisKeyUtil.KeyType.VIEWS_LEFT, secretId);
         redisTemplate.delete(redisKey);
 
-        log.info("Delete Secret :: Secret soft-deleted successfully: {}", secretId);
+        long duration = System.currentTimeMillis() - startTime;
+        MDC.put("duration_ms", String.valueOf(duration));
+        log.info("Delete Secret :: Secret soft-deleted successfully: {}, Time taken: {}", secretId, KieruUtil.millisToRelativeTime(duration));
 
         return SecretMetadataResponseDTO.builder()
                 .secretId(secretId)
@@ -428,6 +449,7 @@ public SecretLogsResponseDTO getSecretLogs(String secretId, int page, int size) 
     @Override
     @Transactional
     public SecretResponseDTO updateSecretPassword(String secretId, String newPassword, String ownerId) {
+        long startTime = System.currentTimeMillis();
         log.info("Update Password :: Updating password for secret ID: {} by owner: {}", secretId, ownerId);
 
         try {
@@ -450,7 +472,9 @@ public SecretLogsResponseDTO getSecretLogs(String secretId, int page, int size) 
             payload.setPasswordHash(hashedPassword);
             payloadRepo.save(payload);
 
-            log.info("Update Password :: Password updated successfully for secret ID: {}", secretId);
+            long duration = System.currentTimeMillis() - startTime;
+            MDC.put("duration_ms", String.valueOf(duration));
+            log.info("Update Password :: Password updated successfully for secret ID: {}, Time taken: {}", secretId, KieruUtil.millisToRelativeTime(duration));
 
             return SecretResponseDTO.builder()
                     .id(payload.getId())
@@ -469,6 +493,7 @@ public SecretLogsResponseDTO getSecretLogs(String secretId, int page, int size) 
     }
 
     private void saveAccessLog(CreateAccessLog accessLog) {
+        long startTime = System.currentTimeMillis();
         try {
             log.debug("Save Access Log :: Saving access log for secret: {}", accessLog.getSecretId());
 
@@ -489,6 +514,8 @@ public SecretLogsResponseDTO getSecretLogs(String secretId, int page, int size) 
             log.setFailureReason(accessLog.getFailureReason());
 
             logRepo.save(log);
+            long duration = System.currentTimeMillis() - startTime;
+            MDC.put("duration_ms", String.valueOf(duration));
             SecretServiceImpl.log.debug("Save Access Log :: Access log saved successfully for secret: {}", accessLog.getSecretId());
         }
         catch (Exception e) {
