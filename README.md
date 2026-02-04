@@ -348,6 +348,6 @@ Found a bug or have an idea? [Open an issue](https://github.com/imkrishnaaaaaaa/
 
 **Built with Spring Boot • Secured with Zero-Knowledge Encryption**
 
-© 2025 Kieru Secure. All rights reserved.
+© 2026 Kieru Secure. All rights reserved.
 
 </div>
